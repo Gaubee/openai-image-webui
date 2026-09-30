@@ -25,6 +25,7 @@ export const resources = {
         subtitle: "Pure frontend BYOK image generation for OpenAI-compatible APIs.",
         github: "GitHub",
         clearTasks: "Clear tasks",
+        clearTasksConfirm: "Clear the task list? Running tasks will be cancelled. Images already saved stay in the Image Library.",
       },
       settings: {
         title: "API Settings",
@@ -420,6 +421,7 @@ export const resources = {
         subtitle: "面向 OpenAI 兼容 API 的纯前端 BYOK 图片生成工具。",
         github: "GitHub",
         clearTasks: "清空任务",
+        clearTasksConfirm: "清空任务列表？正在运行的任务会被取消，已保存的图片仍保留在图库中。",
       },
       settings: {
         title: "API 设置",

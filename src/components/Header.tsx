@@ -33,9 +33,9 @@ export function Header({ taskCount, onClearTasks }: HeaderProps) {
         </a>
         <LanguageSwitcher />
         <button
-          className="inline-flex items-center justify-center rounded-xl bg-slate-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+          className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-slate-200 disabled:hover:bg-white disabled:hover:text-slate-700"
           type="button"
-          onClick={onClearTasks}
+          onClick={() => window.confirm(t("header.clearTasksConfirm")) && onClearTasks()}
           disabled={taskCount === 0}
         >
           {t("header.clearTasks")}
