@@ -21,6 +21,7 @@ import { stripGeminiSizeArtifacts } from "./lib/imageSizing";
 import { DEFAULT_BATCH_FORM, DEFAULT_FORM, DEFAULT_VISION_FORM, loadBatchPrompts, saveBatchPrompts } from "./lib/storage";
 import { modelRequiresStrictPng, prepareInputImage, toInputImageFile } from "./lib/imageInput";
 import { getCachedInputs } from "./lib/imageCache";
+import { stripInternalParams } from "./api/requestShaping";
 import { createBatchId, parsePromptList } from "./lib/promptList";
 import { downloadBatchZip, getTaskBatchId } from "./lib/batchExport";
 import type { AppSettings, BatchFormState, GenerateFormState, ImageTask, InputImageFile, ReuseParamsPayload, VisionFormState } from "./types";
@@ -242,11 +243,12 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
     // ignored by buildCompatibleImageRequest (the "改尺寸都无效" bug). Strip
     // them here so form.size stays the single source of truth. No-op for
     // non-Gemini models.
+    // Internal keys (_batchId / _batchIndex) must not follow into the generate
+    // form, or the new task gets counted as part of the old batch.
     const { prompt: cleanPrompt, extraParams: cleanExtra } = stripGeminiSizeArtifacts(
       payload.model,
       payload.prompt,
-      payload.size,
-      payload.extraParams,
+      payload.extraParams && stripInternalParams(payload.extraParams),
     );
 
     console.log("[reuseParams] handleReuseParams", {

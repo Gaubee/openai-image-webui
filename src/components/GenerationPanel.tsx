@@ -413,6 +413,10 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
                   const raw = Number(event.target.value);
                   if (!Number.isFinite(raw) || raw <= 0) return;
                   setSliderWidth(raw);
+                  // Sync now, not just on blur: Enter submits without blurring.
+                  // Out-of-range values are left for blur to clamp (syncing them
+                  // would clamp mid-typing) and the input's min/max block submit.
+                  if (raw >= MIN_SIZE && raw <= MAX_SIZE) onChange({ size: `${raw}x${sliderHeight}` });
                 }}
                 onBlur={() => {
                   const clamped = clampDimensionExact(sliderWidth);
@@ -435,6 +439,7 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
                   const raw = Number(event.target.value);
                   if (!Number.isFinite(raw) || raw <= 0) return;
                   setSliderHeight(raw);
+                  if (raw >= MIN_SIZE && raw <= MAX_SIZE) onChange({ size: `${sliderWidth}x${raw}` });
                 }}
                 onBlur={() => {
                   const clamped = clampDimensionExact(sliderHeight);
