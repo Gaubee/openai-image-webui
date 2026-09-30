@@ -75,6 +75,7 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [marquee, setMarquee] = useState<MarqueeState | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const hasItems = items.length > 0;
   const objectUrlsRef = useRef(new Set<string>());
   const virtualGridRef = useRef<HTMLDivElement | null>(null);
   const lastClickedIdRef = useRef<string | null>(null);
@@ -239,7 +240,10 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
       window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", handleResize);
     };
-  }, [updateGridTop, updateViewport]);
+    // The grid element only mounts once items exist; re-run so the observer
+    // attaches to it; otherwise gridWidth stays 0 and everything lays out as
+    // one 516px-tall column.
+  }, [hasItems, updateGridTop, updateViewport]);
 
 
   const virtualGrid = useMemo(() => {
