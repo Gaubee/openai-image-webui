@@ -38,7 +38,7 @@ type LibraryImage = CachedImageRecord & {
 
 interface ImageLibraryProps {
   stats: ImageCacheStats;
-  onPreview: (imageUrl: string) => void;
+  onPreview: (imageUrl: string, gallery: string[]) => void;
   onDeleteImage: (id: string) => void;
   onClearImageCache: () => void;
   onReuseParams: (payload: ReuseParamsPayload) => void;
@@ -556,6 +556,11 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
     setMessageKey("library.messages.downloadStarted");
   }
 
+  const handlePreview = useCallback(
+    (imageUrl: string) => onPreview(imageUrl, items.map((item) => item.objectUrl)),
+    [items, onPreview],
+  );
+
   function handleDelete(item: LibraryImage) {
     if (!window.confirm(t("library.deleteConfirm"))) {
       return;
@@ -710,7 +715,7 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
                       isSelected={isSelected}
                       selectionMode={selectionMode}
                       t={t}
-                      onPreview={onPreview}
+                      onPreview={handlePreview}
                       onDownload={handleDownload}
                       onCopyPrompt={handleCopyPrompt}
                       onReuse={handleReuseFromLibrary}

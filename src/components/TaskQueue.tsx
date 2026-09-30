@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { ImageTask } from "../types";
 import { TaskCard } from "./TaskCard";
@@ -7,7 +7,7 @@ const MAX_RENDERED_TASKS = 200;
 
 interface TaskQueueProps {
   tasks: ImageTask[];
-  onPreview: (imageUrl: string) => void;
+  onPreview: (imageUrl: string, gallery: string[]) => void;
   onRetry: (id: string) => void;
   onCancel: (id: string) => void;
   onRemove: (id: string) => void;
@@ -47,6 +47,15 @@ export const TaskQueue = memo(function TaskQueue({
     };
   }, [tasks]);
 
+  const handlePreview = useCallback(
+    (imageUrl: string) =>
+      onPreview(
+        imageUrl,
+        visibleTasks.flatMap((task) => (task.mode !== "vision" && task.imageUrl ? [task.imageUrl] : [])),
+      ),
+    [onPreview, visibleTasks],
+  );
+
   return (
     <section className="rounded-3xl border border-white/70 bg-white/85 p-5 shadow-soft backdrop-blur">
       <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
@@ -75,7 +84,7 @@ export const TaskQueue = memo(function TaskQueue({
             <TaskCard
               key={task.id}
               task={task}
-              onPreview={onPreview}
+              onPreview={handlePreview}
               onRetry={onRetry}
               onCancel={onCancel}
               onRemove={onRemove}

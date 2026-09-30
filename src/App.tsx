@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { GenerationPanel } from "./components/GenerationPanel";
 import { Header } from "./components/Header";
 import { ImageLibrary } from "./components/ImageLibrary";
-import { ImagePreviewModal } from "./components/ImagePreviewModal";
+import { ImagePreviewModal, type PreviewState } from "./components/ImagePreviewModal";
 import { Notice } from "./components/Notice";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { TaskQueue } from "./components/TaskQueue";
@@ -171,7 +171,7 @@ export default function App() {
     }
   }, [currentBatchId]);
 
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [preview, setPreview] = useState<PreviewState | null>(null);
   const [activePanel, setActivePanel] = useState<WorkspacePanel>("tasks");
   const [activeMode, setActiveMode] = useState<WorkspaceMode>("generate");
   const outputRef = useRef<HTMLDivElement>(null);
@@ -206,7 +206,14 @@ export default function App() {
 
   const [toast, setToast] = useState<string>("");
 
-  const closePreview = useCallback(() => setPreviewUrl(null), []);
+  const openPreview = useCallback((url: string, gallery: string[] = []) => {
+    const index = gallery.indexOf(url);
+    setPreview(index >= 0 ? { urls: gallery, index } : { urls: [url], index: 0 });
+  }, []);
+  const navigatePreview = useCallback((index: number) => {
+    setPreview((current) => (current ? { ...current, index } : current));
+  }, []);
+  const closePreview = useCallback(() => setPreview(null), []);
 
   const activeTaskCount = tasks.filter(
     (task) => task.status === "pending" || task.status === "running",
@@ -695,7 +702,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
             {activePanel === "tasks" ? (
               <TaskQueue
                 tasks={tasks}
-                onPreview={setPreviewUrl}
+                onPreview={openPreview}
                 onRetry={retryTask}
                 onCancel={cancelTask}
                 onRemove={removeTask}
@@ -706,7 +713,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
             ) : (
               <ImageLibrary
                 stats={cacheStats}
-                onPreview={setPreviewUrl}
+                onPreview={openPreview}
                 onDeleteImage={clearTaskImage}
                 onReuseParams={handleReuseParams}
                 onEditImage={handleEditImage}
@@ -717,7 +724,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
         </main>
       </div>
 
-      <ImagePreviewModal imageUrl={previewUrl} onClose={closePreview} />
+      <ImagePreviewModal preview={preview} onNavigate={navigatePreview} onClose={closePreview} />
 
       {/* Toast notification */}
       {toast ? (

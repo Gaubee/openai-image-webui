@@ -305,6 +305,8 @@ export const resources = {
         closePreview: "Close preview",
         close: "Close",
         alt: "Preview",
+        previous: "Previous image",
+        next: "Next image",
       },
       maskEditor: {
         title: "Paint mask (inpainting)",
@@ -694,6 +696,8 @@ export const resources = {
         closePreview: "关闭预览",
         close: "关闭",
         alt: "预览",
+        previous: "上一张",
+        next: "下一张",
       },
       maskEditor: {
         title: "涂抹蒙版（局部重绘）",
