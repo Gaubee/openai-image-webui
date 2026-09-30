@@ -19,7 +19,7 @@ import { toFriendlyError } from "./lib/errors";
 import { parseAdvancedJson } from "./lib/parseAdvancedJson";
 import { stripGeminiSizeArtifacts } from "./lib/imageSizing";
 import { DEFAULT_BATCH_FORM, DEFAULT_FORM, DEFAULT_VISION_FORM, loadBatchPrompts, saveBatchPrompts } from "./lib/storage";
-import { toInputImageFile } from "./lib/imageInput";
+import { modelRequiresStrictPng, prepareInputImage, toInputImageFile } from "./lib/imageInput";
 import { getCachedInputs } from "./lib/imageCache";
 import { createBatchId, parsePromptList } from "./lib/promptList";
 import { downloadBatchZip, getTaskBatchId } from "./lib/batchExport";
@@ -404,6 +404,41 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
     [buildReusePayloadFromTask, handleReuseParams],
   );
 
+  /** Load a generated image into the generate form as the edit source. */
+  const handleEditImage = useCallback(async (imageUrl: string) => {
+    setActiveMode("generate");
+    setFormError("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    try {
+      const blob = await (await fetch(imageUrl)).blob();
+      const type = blob.type || "image/png";
+      const image = await prepareInputImage(
+        new File([blob], `edit-source.${type.split("/")[1] || "png"}`, { type }),
+        { strictPngOnly: modelRequiresStrictPng(settings.model) },
+      );
+
+      setForm((current) => {
+        for (const item of current.inputImages) URL.revokeObjectURL(item.previewUrl);
+        if (current.maskImage) URL.revokeObjectURL(current.maskImage.previewUrl);
+        return {
+          ...current,
+          inputImages: [image],
+          maskImage: null,
+          size: `${image.width}x${image.height}`,
+        };
+      });
+      setToast(t("tasks.messages.editImageLoaded"));
+    } catch (error) {
+      setFormError(
+        toFriendlyError(error, {
+          unknown: t("errors.unknown"),
+          requestFailed: t("errors.requestFailed"),
+        }),
+      );
+    }
+  }, [settings.model, t]);
+
   const handleGenerate = useCallback(() => {
     setFormError("");
 
@@ -650,6 +685,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
                 onRemove={removeTask}
                 onClearTaskImage={clearTaskImage}
                 onReuseParams={handleReuseTask}
+                onEditImage={handleEditImage}
               />
             ) : (
               <ImageLibrary
@@ -657,6 +693,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
                 onPreview={setPreviewUrl}
                 onDeleteImage={clearTaskImage}
                 onReuseParams={handleReuseParams}
+                onEditImage={handleEditImage}
                 onClearImageCache={clearCachedImages}
               />
             )}

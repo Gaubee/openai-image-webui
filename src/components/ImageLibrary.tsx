@@ -42,6 +42,7 @@ interface ImageLibraryProps {
   onDeleteImage: (id: string) => void;
   onClearImageCache: () => void;
   onReuseParams: (payload: ReuseParamsPayload) => void;
+  onEditImage: (imageUrl: string) => void;
 }
 
 function formatBytes(value: number) {
@@ -64,7 +65,7 @@ function getColumnCount(width: number) {
   return Math.max(1, Math.floor((width + GRID_GAP) / (CARD_MIN_WIDTH + GRID_GAP)));
 }
 
-export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDeleteImage, onClearImageCache, onReuseParams }: ImageLibraryProps) {
+export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDeleteImage, onClearImageCache, onReuseParams, onEditImage }: ImageLibraryProps) {
   const { t } = useTranslation();
   const [items, setItems] = useState<LibraryImage[]>([]);
   const [hasMore, setHasMore] = useState(false);
@@ -713,6 +714,7 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
                       onDownload={handleDownload}
                       onCopyPrompt={handleCopyPrompt}
                       onReuse={handleReuseFromLibrary}
+                      onEdit={onEditImage}
                       onDelete={handleDelete}
                       onToggleSelect={toggleSelectOne}
                     />
@@ -760,6 +762,7 @@ interface ImageCardProps {
   onDownload: (item: LibraryImage) => void;
   onCopyPrompt: (item: LibraryImage) => void;
   onReuse: (item: LibraryImage) => void;
+  onEdit: (imageUrl: string) => void;
   onDelete: (item: LibraryImage) => void;
   onToggleSelect: (id: string, e: React.MouseEvent) => void;
 }
@@ -773,6 +776,7 @@ const ImageCard = memo(function ImageCard({
   onDownload,
   onCopyPrompt,
   onReuse,
+  onEdit,
   onDelete,
   onToggleSelect,
 }: ImageCardProps) {
@@ -874,6 +878,14 @@ const ImageCard = memo(function ImageCard({
             tabIndex={selectionMode ? -1 : 0}
           >
             {t("tasks.actions.reuseParams")}
+          </button>
+          <button
+            type="button"
+            className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-700 transition hover:border-violet-300 hover:bg-violet-100"
+            onClick={() => onEdit(item.objectUrl)}
+            tabIndex={selectionMode ? -1 : 0}
+          >
+            {t("tasks.actions.editImage")}
           </button>
           <button
             type="button"

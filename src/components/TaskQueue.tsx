@@ -13,6 +13,7 @@ interface TaskQueueProps {
   onRemove: (id: string) => void;
   onClearTaskImage: (id: string) => void;
   onReuseParams: (task: ImageTask) => void;
+  onEditImage: (imageUrl: string) => void;
 }
 
 export const TaskQueue = memo(function TaskQueue({
@@ -23,6 +24,7 @@ export const TaskQueue = memo(function TaskQueue({
   onRemove,
   onClearTaskImage,
   onReuseParams,
+  onEditImage,
 }: TaskQueueProps) {
   const { t } = useTranslation();
 
@@ -79,6 +81,7 @@ export const TaskQueue = memo(function TaskQueue({
               onRemove={onRemove}
               onClearImage={onClearTaskImage}
               onReuseParams={onReuseParams}
+              onEditImage={onEditImage}
             />
           ))}
         </div>

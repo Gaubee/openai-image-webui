@@ -13,6 +13,7 @@ interface TaskCardProps {
   onRemove: (id: string) => void;
   onClearImage: (id: string) => void;
   onReuseParams: (task: ImageTask) => void;
+  onEditImage: (imageUrl: string) => void;
 }
 
 const statusStyles: Record<ImageTask["status"], string> = {
@@ -77,7 +78,7 @@ function formatTaskDebug(task: ImageTask, errorText: string) {
   );
 }
 
-export const TaskCard = memo(function TaskCard({ task, onPreview, onRetry, onCancel, onRemove, onClearImage, onReuseParams }: TaskCardProps) {
+export const TaskCard = memo(function TaskCard({ task, onPreview, onRetry, onCancel, onRemove, onClearImage, onReuseParams, onEditImage }: TaskCardProps) {
   const { t } = useTranslation();
   const [messageKey, setMessageKey] = useState<string>("");
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
@@ -367,6 +368,15 @@ export const TaskCard = memo(function TaskCard({ task, onPreview, onRetry, onCan
                 onClick={() => onReuseParams(task)}
               >
                 {t("tasks.actions.reuseParams")}
+              </button>
+            ) : null}
+            {!isVisionTask && hasImage ? (
+              <button
+                type="button"
+                className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-700 transition hover:border-violet-300 hover:bg-violet-100"
+                onClick={() => task.imageUrl && onEditImage(task.imageUrl)}
+              >
+                {t("tasks.actions.editImage")}
               </button>
             ) : null}
             {task.status === "error" || task.status === "cancelled" ? (

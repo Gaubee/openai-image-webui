@@ -259,6 +259,7 @@ export const resources = {
           deleteImageCache: "Delete image cache",
 
           reuseParams: "Reuse params",
+          editImage: "Edit image",
           retry: "Retry",
           cancel: "Cancel",
           delete: "Delete",
@@ -294,6 +295,7 @@ export const resources = {
           paramsApplied: "Parameters applied.",
           paramsAppliedInputsLost:
             "Parameters applied. Reference images are no longer available — please re-upload if needed.",
+          editImageLoaded: "Image loaded for editing. Describe the change and submit.",
         },
 
       },
@@ -636,6 +638,7 @@ export const resources = {
           deleteImageCache: "删除图片缓存",
 
           reuseParams: "使用此参数",
+          editImage: "编辑此图",
           retry: "重试",
           cancel: "取消",
           delete: "删除",
@@ -668,6 +671,7 @@ export const resources = {
           paramsApplied: "参数已填入。",
           paramsAppliedInputsLost:
             "参数已填入。参考图片已失效，如需编辑模式请重新上传。",
+          editImageLoaded: "已载入为编辑底图，写下修改要求后提交即可。",
         },
 
       },
