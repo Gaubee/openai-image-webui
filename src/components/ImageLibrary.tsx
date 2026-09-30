@@ -849,14 +849,6 @@ const ImageCard = memo(function ImageCard({
           <button
             type="button"
             className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
-            onClick={() => onPreview(item.objectUrl)}
-            tabIndex={selectionMode ? -1 : 0}
-          >
-            {t("tasks.actions.preview")}
-          </button>
-          <button
-            type="button"
-            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
             onClick={() => void onDownload(item)}
             tabIndex={selectionMode ? -1 : 0}
           >

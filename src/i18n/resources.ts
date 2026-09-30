@@ -252,7 +252,6 @@ export const resources = {
           cancelled: "cancelled",
         },
         actions: {
-          preview: "Preview",
           download: "Download",
           copyImageUrl: "Copy image URL",
           copyOutput: "Copy text",
@@ -645,7 +644,6 @@ export const resources = {
           cancelled: "已取消",
         },
         actions: {
-          preview: "预览",
           download: "下载",
           copyImageUrl: "复制图片 URL",
           copyOutput: "复制文字结果",

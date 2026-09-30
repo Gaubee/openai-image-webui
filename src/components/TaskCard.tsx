@@ -356,9 +356,9 @@ export const TaskCard = memo(function TaskCard({ task, onPreview, onRetry, onCan
               <button
                 type="button"
                 className={actionButtonClass()}
-                onClick={() => task.imageUrl && onPreview(task.imageUrl)}
+                onClick={() => void handleDownload()}
               >
-                {t("tasks.actions.preview")}
+                {t("tasks.actions.download")}
               </button>
             ) : null}
             {!isVisionTask ? (
@@ -434,32 +434,18 @@ export const TaskCard = memo(function TaskCard({ task, onPreview, onRetry, onCan
                       </button>
                     </>
                   ) : (
-                    <>
-                      <button
-                        type="button"
-                        role="menuitem"
-                        className={menuItemClass(!hasImage)}
-                        disabled={!hasImage}
-                        onClick={() => {
-                          setActionsMenuOpen(false);
-                          void handleDownload();
-                        }}
-                      >
-                        {t("tasks.actions.download")}
-                      </button>
-                      <button
-                        type="button"
-                        role="menuitem"
-                        className={menuItemClass(!hasImage)}
-                        disabled={!hasImage}
-                        onClick={() => {
-                          setActionsMenuOpen(false);
-                          void handleCopyImage();
-                        }}
-                      >
-                        {t("tasks.actions.copyImageUrl")}
-                      </button>
-                    </>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className={menuItemClass(!hasImage)}
+                      disabled={!hasImage}
+                      onClick={() => {
+                        setActionsMenuOpen(false);
+                        void handleCopyImage();
+                      }}
+                    >
+                      {t("tasks.actions.copyImageUrl")}
+                    </button>
                   )}
                   <button
                     type="button"
