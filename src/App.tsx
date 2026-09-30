@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { GenerationPanel } from "./components/GenerationPanel";
 import { Header } from "./components/Header";
@@ -174,6 +174,18 @@ export default function App() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [activePanel, setActivePanel] = useState<WorkspacePanel>("tasks");
   const [activeMode, setActiveMode] = useState<WorkspaceMode>("generate");
+  const outputRef = useRef<HTMLDivElement>(null);
+
+  // On mobile the output sits far below the form, and on desktop a long task list can scroll it away.
+  const showOutput = useCallback(() => {
+    setActivePanel("tasks");
+    requestAnimationFrame(() => {
+      const top = outputRef.current?.getBoundingClientRect().top;
+      if (top !== undefined && (top < 0 || top > window.innerHeight / 2)) {
+        outputRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+  }, []);
 
   const {
     tasks,
@@ -457,7 +469,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
         mustBeObject: t("errors.advancedJsonObject"),
       });
       addTasks(normalizedForm, extraParams);
-      setActivePanel("tasks");
+      showOutput();
       // Keep inputImages/maskImage in the form — user may want to tweak the
       // prompt and re-submit. Revoking their object URLs here would break
       // the in-flight task's preview data too. They get cleared when the
@@ -472,7 +484,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
         }),
       );
     }
-  }, [addTasks, form, settings, t]);
+  }, [addTasks, form, settings, showOutput, t]);
 
   const handleAnalyzeImages = useCallback(() => {
     setVisionError("");
@@ -494,7 +506,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
         mustBeObject: t("errors.advancedJsonObject"),
       });
       addVisionTask(normalizedForm, extraParams);
-      setActivePanel("tasks");
+      showOutput();
       setVisionForm((current) => ({ ...current, prompt: normalizedForm.prompt }));
     } catch (error) {
       setVisionError(
@@ -504,7 +516,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
         }),
       );
     }
-  }, [addVisionTask, settings, t, visionForm]);
+  }, [addVisionTask, settings, showOutput, t, visionForm]);
 
   const handleBatchGenerate = useCallback(() => {
     setBatchError("");
@@ -534,7 +546,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
         batchId,
       });
       setCurrentBatchId(batchId);
-      setActivePanel("tasks");
+      showOutput();
     } catch (error) {
       setBatchError(
         toFriendlyError(error, {
@@ -543,7 +555,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
         }),
       );
     }
-  }, [addBatchTasks, batchForm, settings, t]);
+  }, [addBatchTasks, batchForm, settings, showOutput, t]);
 
   const handleRetryBatchErrors = useCallback(() => {
     if (!currentBatchId) return;
@@ -577,13 +589,15 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
 
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_#e0f2fe,_transparent_34rem),linear-gradient(135deg,_#f8fafc,_#eef2ff)] px-4 py-6 text-slate-900 md:px-8">
       <div className="mx-auto max-w-7xl">
-        <Header taskCount={tasks.length} onClearTasks={clearTasks} />
+        <main className="grid gap-6 grid-cols-1 lg:grid-cols-[380px_1fr] lg:grid-rows-[auto_1fr] items-start">
+          {/* On desktop the header sits above the output column so the sticky sidebar starts at the top and fits one screen. */}
+          <div className="space-y-4 lg:col-start-2">
+            <Header taskCount={tasks.length} onClearTasks={clearTasks} />
+            <StorageHealthBanner />
+          </div>
 
-        <StorageHealthBanner />
-
-        <main className="grid gap-6 grid-cols-1 lg:grid-cols-[380px_1fr] items-start">
           {/* LEFT COLUMN: SUPER CONTROL CENTER (STICKY ON DESKTOP) */}
-          <aside className="lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto lg:pr-2 space-y-6">
+          <aside className="lg:sticky lg:top-6 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto lg:pr-2 space-y-6">
             <SettingsPanel settings={settings} onChange={setSettings} onReset={resetSettings} />
 
             {/* Workspace Mode Selection */}
@@ -641,7 +655,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
           </aside>
 
           {/* RIGHT COLUMN: PURE GALLERY / OUTPUT PANEL */}
-          <div className="space-y-6">
+          <div ref={outputRef} className="space-y-6 scroll-mt-6 lg:col-start-2">
             {/* Viewport Select Tab (Tasks vs Library) */}
             <div className="rounded-2xl border border-white/70 bg-white/75 p-1 shadow-sm backdrop-blur">
               <div className="grid grid-cols-2 gap-1">

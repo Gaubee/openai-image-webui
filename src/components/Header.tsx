@@ -10,7 +10,7 @@ export function Header({ taskCount, onClearTasks }: HeaderProps) {
   const { t } = useTranslation();
 
   return (
-    <header className="mb-8 flex flex-col gap-4 rounded-3xl border border-white/60 bg-white/80 p-6 shadow-soft backdrop-blur md:flex-row md:items-center md:justify-between">
+    <header className="flex flex-col gap-4 rounded-3xl border border-white/60 bg-white/80 p-6 shadow-soft backdrop-blur md:flex-row md:items-center md:justify-between">
       <div>
         <div className="mb-2 inline-flex rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-sky-200">
           {t("header.badge")}

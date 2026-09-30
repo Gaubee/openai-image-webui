@@ -22,7 +22,7 @@ export const StorageHealthBanner = memo(function StorageHealthBanner() {
   }
 
   return (
-    <div className="mb-4 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 shadow-soft">
+    <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 shadow-soft">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="font-semibold">{t("storageHealth.title")}</p>

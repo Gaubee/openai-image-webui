@@ -643,13 +643,15 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
 
         {error ? <Notice variant="error">{error}</Notice> : null}
 
-        <button
-          className="inline-flex w-full items-center justify-center rounded-xl bg-sky-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:bg-slate-300"
-          type="submit"
-          disabled={!form.prompt.trim()}
-        >
-          {isEditMode ? t("generation.edit") : t("generation.generate")}
-        </button>
+        <div className="sticky bottom-0 z-10 -mx-5 -mb-5 rounded-b-3xl bg-white/95 px-5 pb-5 pt-3">
+          <button
+            className="inline-flex w-full items-center justify-center rounded-xl bg-sky-500 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+            type="submit"
+            disabled={!form.prompt.trim()}
+          >
+            {isEditMode ? t("generation.edit") : t("generation.generate")}
+          </button>
+        </div>
       </form>
     </section>
   );
