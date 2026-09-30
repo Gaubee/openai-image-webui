@@ -20,6 +20,7 @@ import { parseAdvancedJson } from "./lib/parseAdvancedJson";
 import { stripGeminiSizeArtifacts } from "./lib/imageSizing";
 import { DEFAULT_BATCH_FORM, DEFAULT_FORM, DEFAULT_VISION_FORM, loadBatchPrompts, saveBatchPrompts } from "./lib/storage";
 import { toInputImageFile } from "./lib/imageInput";
+import { getCachedInputs } from "./lib/imageCache";
 import { createBatchId, parsePromptList } from "./lib/promptList";
 import { downloadBatchZip, getTaskBatchId } from "./lib/batchExport";
 import type { AppSettings, BatchFormState, GenerateFormState, ImageTask, InputImageFile, ReuseParamsPayload, VisionFormState } from "./types";
@@ -318,8 +319,13 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
    * and for mask size validation.
    */
   const buildReusePayloadFromTask = useCallback(async (task: ImageTask): Promise<ReuseParamsPayload> => {
-    const pending = getPendingInputs(task.id);
     const isEdit = task.mode === "edit";
+    const memoryInputs = getPendingInputs(task.id);
+    // In-memory inputs are dropped once a task succeeds; the persisted copy
+    // stored with the cached result survives that and page reloads.
+    const pending = isEdit && !memoryInputs?.images.length
+      ? await getCachedInputs(task.id).catch(() => null)
+      : memoryInputs;
     const hasInputs = isEdit && pending && pending.images.length > 0;
 
     // The generate and batch forms both keep their inputImages after a
@@ -389,7 +395,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
       maskImage,
       inputImagesLost,
     };
-  }, [getPendingInputs]);
+  }, [batchForm.inputImages, form.inputImages, form.maskImage, getPendingInputs]);
 
   const handleReuseTask = useCallback(
     (task: ImageTask) => {

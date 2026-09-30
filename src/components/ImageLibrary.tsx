@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
 import { useTranslation } from "react-i18next";
-import { listCachedImages, type CachedImageRecord } from "../lib/imageCache";
+import { getCachedInputs, listCachedImages, type CachedImageRecord } from "../lib/imageCache";
+import { toInputImageFile } from "../lib/imageInput";
 import { copyText, downloadImage } from "../lib/download";
 import { downloadLibraryZip } from "../lib/libraryExport";
 import type { ImageCacheStats, ReuseParamsPayload } from "../types";
@@ -577,13 +578,18 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
     setLoadedCount(0);
   }
 
-  function handleReuseFromLibrary(item: LibraryImage) {
+  async function handleReuseFromLibrary(item: LibraryImage) {
+    const inputs = await getCachedInputs(item.id).catch(() => null);
     const payload: ReuseParamsPayload = {
       model: item.model || "",
       prompt: item.prompt || "",
       size: item.generationSize || "1024x1024",
       responseFormat: (item.responseFormat as "url" | "b64_json") || "b64_json",
-      // Library images never have in-memory references
+      extraParams: item.extraParams,
+      inputImages: inputs ? await Promise.all(inputs.images.map((file) => toInputImageFile(file))) : undefined,
+      maskImage: inputs?.mask ? await toInputImageFile(inputs.mask) : null,
+      // Records cached before inputs were persisted can't tell whether they
+      // were edits, so don't claim anything was lost.
       inputImagesLost: false,
     };
     onReuseParams(payload);
@@ -820,7 +826,7 @@ const ImageCard = memo(function ImageCard({
       <div className="flex min-h-0 flex-1 flex-col space-y-3 p-3">
         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
           <span>{new Date(item.taskCreatedAt || item.cachedAt).toLocaleString()}</span>
-          <span>{formatBytes(item.size)}</span>
+          <span>{formatBytes(item.blob.size)}</span>
         </div>
         <p className="line-clamp-2 min-h-10 text-sm leading-5 text-slate-700">
           {item.prompt || t("library.unknownPrompt")}
@@ -864,7 +870,7 @@ const ImageCard = memo(function ImageCard({
           <button
             type="button"
             className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-medium text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
-            onClick={() => onReuse(item)}
+            onClick={() => void onReuse(item)}
             tabIndex={selectionMode ? -1 : 0}
           >
             {t("tasks.actions.reuseParams")}
