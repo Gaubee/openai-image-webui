@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, memo, type ChangeEvent, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, memo, type ChangeEvent, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import type { GenerateFormState, InputImageFile } from "../types";
 import {
@@ -7,10 +7,12 @@ import {
   modelLikelySupportsMultipleImages,
   modelRequiresStrictPng,
   prepareInputImage,
+  toInputImageFile,
 } from "../lib/imageInput";
 import { getModelSizingProfile, getSizePresetGroupsForModel } from "../lib/imageSizing";
 import { Notice } from "./Notice";
 import { ImageDropzone } from "./ImageDropzone";
+import { MaskEditor } from "./MaskEditor";
 
 const SIZE_STEP = 64;
 const MIN_SIZE = 256;
@@ -138,6 +140,8 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
   const [recentSizes, setRecentSizes] = useState<string[]>(() => loadRecentSizes());
   const [inputImageError, setInputImageError] = useState("");
   const maskFileInputRef = useRef<HTMLInputElement>(null);
+  const [maskEditorOpen, setMaskEditorOpen] = useState(false);
+  const closeMaskEditor = useCallback(() => setMaskEditorOpen(false), []);
 
   const strictPng = modelRequiresStrictPng(model ?? "");
   const supportsMultiImage = modelLikelySupportsMultipleImages(model ?? "");
@@ -246,7 +250,12 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
       return;
     }
     try {
-      const mask = await prepareInputImage(file, { strictPngOnly: true });
+      // Not prepareInputImage: its strict mode also demands a square image
+      // (a dall-e-2 input rule), which rejected masks for any other ratio.
+      if (file.type !== "image/png") {
+        throw new InputImageError(`Mask must be a PNG. Got: ${file.type || "unknown"}.`);
+      }
+      const mask = await toInputImageFile(file);
       assertMaskMatchesImage(mask, form.inputImages[0]);
       if (form.maskImage) URL.revokeObjectURL(form.maskImage.previewUrl);
       onChange({ maskImage: mask });
@@ -266,9 +275,18 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
     });
     onChange({ inputImages: next });
     // Mask must be dropped if its reference (first image) is gone.
-    if (next.length === 0 && form.maskImage) {
+    if (form.inputImages[0]?.id === id && form.maskImage) {
       URL.revokeObjectURL(form.maskImage.previewUrl);
       onChange({ maskImage: null });
+    }
+  }
+
+  function handlePaintedMask(file: File | null) {
+    setMaskEditorOpen(false);
+    if (file) {
+      void handleAddMask(file);
+    } else {
+      removeMask();
     }
   }
 
@@ -328,6 +346,13 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
               <p className="text-xs font-medium text-slate-600">{t("generation.inputImages.mask")}</p>
               <p className="mt-1 text-xs text-slate-500">{t("generation.inputImages.maskHint")}</p>
               <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="flex h-20 w-20 items-center justify-center rounded-lg border border-dashed border-violet-300 bg-violet-50 px-1 text-center text-xs font-medium text-violet-700 transition hover:border-violet-400 hover:bg-violet-100"
+                  onClick={() => setMaskEditorOpen(true)}
+                >
+                  {form.maskImage ? t("generation.inputImages.editMaskButton") : t("generation.inputImages.paintMaskButton")}
+                </button>
                 {form.maskImage ? (
                   <div
                     className="group relative h-20 w-20 overflow-hidden rounded-lg border border-slate-200 bg-white"
@@ -368,6 +393,15 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
             </div>
           ) : null}
         </ImageDropzone>
+
+        {maskEditorOpen && form.inputImages[0] ? (
+          <MaskEditor
+            image={form.inputImages[0]}
+            initialMask={form.maskImage}
+            onApply={handlePaintedMask}
+            onCancel={closeMaskEditor}
+          />
+        ) : null}
 
         {/* Image count */}
         <label className="block">
