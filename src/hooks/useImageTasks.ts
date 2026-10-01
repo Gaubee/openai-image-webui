@@ -570,6 +570,7 @@ export function useImageTasks(settings: AppSettings) {
     const inputImageFiles = form.inputImages.map((item) => item.file);
     const maskFile = form.maskImage?.file ?? null;
     const isEdit = inputImageFiles.length > 0;
+    const groupId = createTaskId();
 
     const newTasks: ImageTask[] = Array.from({ length: count }, (_, index) => {
       const id = createTaskId();
@@ -588,6 +589,7 @@ export function useImageTasks(settings: AppSettings) {
         responseFormat: currentSettings.responseFormat,
         status: "pending",
         createdAt: now + index,
+        groupId,
         extraParams: compatibleRequest.extraParams,
         inputImageCount: isEdit ? inputImageFiles.length : undefined,
         hasMask: isEdit && maskFile ? true : undefined,
@@ -661,6 +663,7 @@ export function useImageTasks(settings: AppSettings) {
     let batchIndex = 0;
 
     for (const prompt of prompts) {
+      const groupId = createTaskId();
       for (let c = 0; c < count; c += 1) {
         const compatible = buildCompatibleImageRequest({
           model,
@@ -691,6 +694,7 @@ export function useImageTasks(settings: AppSettings) {
           responseFormat: currentSettings.responseFormat,
           status: "pending",
           createdAt: now + batchIndex,
+          groupId,
           extraParams: taskExtra,
           inputImageCount: isEdit ? inputImageFiles.length : undefined,
         });

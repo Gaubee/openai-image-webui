@@ -16,7 +16,7 @@ interface TaskCardProps {
   onEditImage: (imageUrl: string) => void;
 }
 
-const statusStyles: Record<ImageTask["status"], string> = {
+export const statusStyles: Record<ImageTask["status"], string> = {
   pending: "bg-slate-100 text-slate-700 ring-slate-200",
   running: "bg-sky-100 text-sky-700 ring-sky-200",
   success: "bg-emerald-100 text-emerald-700 ring-emerald-200",
@@ -54,11 +54,11 @@ function menuItemClass(disabled = false, danger = false) {
 // Some persisted error strings are stored as i18n keys (e.g. "tasks.messages.taskCancelled")
 // so they can be re-translated when the user switches language. Anything else (such as
 // raw API error responses) is rendered as-is.
-function isI18nKey(value: string) {
+export function isI18nKey(value: string) {
   return value.startsWith("tasks.messages.") || value.startsWith("errors.");
 }
 
-function formatTaskDebug(task: ImageTask, errorText: string) {
+export function formatTaskDebug(task: ImageTask, errorText: string) {
   return JSON.stringify(
     {
       id: task.id,

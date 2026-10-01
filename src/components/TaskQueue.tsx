@@ -1,7 +1,9 @@
 import { memo, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { ImageTask } from "../types";
+import { groupTasks } from "../lib/taskGroups";
 import { TaskCard } from "./TaskCard";
+import { TaskGroupCard } from "./TaskGroupCard";
 
 const MAX_RENDERED_TASKS = 200;
 
@@ -28,7 +30,7 @@ export const TaskQueue = memo(function TaskQueue({
 }: TaskQueueProps) {
   const { t } = useTranslation();
 
-  const { stats, visibleTasks, hiddenCount } = useMemo(() => {
+  const { stats, groups, visibleCount, hiddenCount } = useMemo(() => {
     const counts = { pending: 0, running: 0, success: 0, error: 0 };
 
     for (const task of tasks) {
@@ -37,23 +39,18 @@ export const TaskQueue = memo(function TaskQueue({
       }
     }
 
-    const ordered = [...tasks].sort((a, b) => b.createdAt - a.createdAt);
-    const visible = ordered.slice(0, MAX_RENDERED_TASKS);
+    const { groups, hiddenCount } = groupTasks(tasks, MAX_RENDERED_TASKS);
 
-    return {
-      stats: counts,
-      visibleTasks: visible,
-      hiddenCount: Math.max(0, ordered.length - visible.length),
-    };
+    return { stats: counts, groups, visibleCount: tasks.length - hiddenCount, hiddenCount };
   }, [tasks]);
 
   const handlePreview = useCallback(
     (imageUrl: string) =>
       onPreview(
         imageUrl,
-        visibleTasks.flatMap((task) => (task.mode !== "vision" && task.imageUrl ? [task.imageUrl] : [])),
+        groups.flat().flatMap((task) => (task.mode !== "vision" && task.imageUrl ? [task.imageUrl] : [])),
       ),
-    [onPreview, visibleTasks],
+    [onPreview, groups],
   );
 
   return (
@@ -70,29 +67,42 @@ export const TaskQueue = memo(function TaskQueue({
 
       {hiddenCount > 0 ? (
         <div className="mb-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-          {t("tasks.showingRecent", { shown: visibleTasks.length, hidden: hiddenCount })}
+          {t("tasks.showingRecent", { shown: visibleCount, hidden: hiddenCount })}
         </div>
       ) : null}
 
-      {visibleTasks.length === 0 ? (
+      {groups.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-14 text-center text-sm text-slate-500">
           {t("tasks.empty")}
         </div>
       ) : (
         <div className="space-y-4">
-          {visibleTasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              onPreview={handlePreview}
-              onRetry={onRetry}
-              onCancel={onCancel}
-              onRemove={onRemove}
-              onClearImage={onClearTaskImage}
-              onReuseParams={onReuseParams}
-              onEditImage={onEditImage}
-            />
-          ))}
+          {groups.map((group) =>
+            group.length > 1 ? (
+              <TaskGroupCard
+                key={group[0].id}
+                tasks={group}
+                onPreview={handlePreview}
+                onRetry={onRetry}
+                onCancel={onCancel}
+                onRemove={onRemove}
+                onReuseParams={onReuseParams}
+                onEditImage={onEditImage}
+              />
+            ) : (
+              <TaskCard
+                key={group[0].id}
+                task={group[0]}
+                onPreview={handlePreview}
+                onRetry={onRetry}
+                onCancel={onCancel}
+                onRemove={onRemove}
+                onClearImage={onClearTaskImage}
+                onReuseParams={onReuseParams}
+                onEditImage={onEditImage}
+              />
+            ),
+          )}
         </div>
       )}
     </section>

@@ -267,6 +267,14 @@ export const resources = {
           delete: "Delete",
           more: "More",
         },
+        group: {
+          progress: "{{done}}/{{total}} done",
+          edit: "edit",
+          copyDebug: "Copy debug",
+          retryFailed: "Retry failed ({{count}})",
+          cancelAll: "Cancel all",
+          deleteAll: "Delete group",
+        },
         cache: {
           title: "Image cache",
           summary: "{{count}} images · {{size}}",
@@ -660,6 +668,14 @@ export const resources = {
           cancel: "取消",
           delete: "删除",
           more: "更多",
+        },
+        group: {
+          progress: "已完成 {{done}}/{{total}}",
+          edit: "编辑",
+          copyDebug: "复制调试",
+          retryFailed: "重试失败项（{{count}}）",
+          cancelAll: "全部取消",
+          deleteAll: "删除整组",
         },
         cache: {
           title: "图片缓存",
