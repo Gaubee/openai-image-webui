@@ -1,3 +1,8 @@
+/*
+ * Intent: Task queue management with IndexedDB persistence (2026-10-05)
+ * Original requirement: Migrate from localStorage to IDB, remove 500-task limit, preserve functionality
+ */
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { editImage, generateImage, getImageGenerationDebug } from "../api/openaiImages";
 import { analyzeImages, getVisionAnalysisDebug } from "../api/openaiVision";
@@ -14,7 +19,7 @@ import {
 import { toFriendlyError } from "../lib/errors";
 import { buildCompatibleImageRequest } from "../lib/imageSizing";
 import { estimateImageCost, estimateTokenCost, extractUsageFromRaw } from "../lib/pricing";
-import { loadTasks, saveTasks } from "../lib/storage";
+import { getTasks, addTask, updateTask, deleteTask, clearTasks } from "../lib/storageNew";
 import { reportStorageIssue } from "../lib/storageHealth";
 import { generateThumbnail } from "../lib/thumbnail";
 import type { AppSettings, GenerateFormState, ImageCacheStats, ImageTask, InputImageFile, VisionFormState } from "../types";
@@ -74,7 +79,8 @@ function imageSourceFromTask(task: ImageTask) {
 }
 
 export function useImageTasks(settings: AppSettings) {
-  const [tasks, setTasks] = useState<ImageTask[]>(() => loadTasks());
+  const [tasks, setTasks] = useState<ImageTask[]>([]);
+  const [tasksLoaded, setTasksLoaded] = useState(false);
   const [cacheStats, setCacheStats] = useState<ImageCacheStats>(() => createEmptyCacheStats());
   const settingsRef = useRef(settings);
   const tasksRef = useRef(tasks);
@@ -83,6 +89,17 @@ export function useImageTasks(settings: AppSettings) {
   // Edit-mode inputs can't be persisted (they're raw File blobs). Keep them in
   // memory keyed by task id; drop entries once the task finishes or is removed.
   const pendingInputsRef = useRef(new Map<string, PendingTaskInputs>());
+
+  // Load tasks from IndexedDB on mount
+  useEffect(() => {
+    getTasks().then((loaded) => {
+      setTasks(loaded);
+      setTasksLoaded(true);
+    }).catch((error) => {
+      console.error('Failed to load tasks from IDB:', error);
+      setTasksLoaded(true);
+    });
+  }, []);
 
 
   const revokeObjectUrl = useCallback((url?: string) => {
@@ -143,8 +160,16 @@ export function useImageTasks(settings: AppSettings) {
 
   useEffect(() => {
     tasksRef.current = tasks;
-    saveTasks(tasks);
-  }, [tasks]);
+    
+    // Persist tasks to IndexedDB (no 500-item limit, replaces localStorage batch save)
+    if (tasksLoaded) {
+      tasks.forEach(task => {
+        updateTask(task).catch(err => {
+          console.error('Failed to persist task:', err);
+        });
+      });
+    }
+  }, [tasks, tasksLoaded]);
 
   useEffect(() => {
     let active = true;
@@ -786,7 +811,11 @@ export function useImageTasks(settings: AppSettings) {
     pendingInputsRef.current.delete(id);
     revokeObjectUrl(currentTask?.imageUrl);
     setTasks((current) => current.filter((task) => task.id !== id));
-
+    
+    // Delete from IndexedDB
+    deleteTask(id).catch(err => {
+      console.error('Failed to delete task from IDB:', err);
+    });
   }
 
   function clearTaskImage(id: string) {

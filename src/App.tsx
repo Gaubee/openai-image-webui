@@ -1,3 +1,8 @@
+/*
+ * Intent: Main application shell with migration, drawer navigation, inline results (2026-10-05)
+ * Original requirement: v1 redesign per Stage 0 IA (2-mode canvas, drawer nav, IDB storage)
+ */
+
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { GenerationPanel } from "./components/GenerationPanel";
@@ -12,9 +17,10 @@ import { BatchRenamePanel } from "./components/BatchRenamePanel";
 import { BatchGenerationPanel } from "./components/BatchGenerationPanel";
 import { StorageHealthBanner } from "./components/StorageHealthBanner";
 
-
 import { useImageTasks } from "./hooks/useImageTasks";
 import { useSettings } from "./hooks/useSettings";
+import { shouldRunMigration, runMigration } from "./lib/storageMigration";
+import { requestPersistence } from "./lib/storageNew";
 import { toFriendlyError } from "./lib/errors";
 import { parseAdvancedJson } from "./lib/parseAdvancedJson";
 import { stripGeminiSizeArtifacts } from "./lib/imageSizing";
@@ -138,7 +144,8 @@ function makeInputImageFile(file: File, width = 0, height = 0): InputImageFile {
 
 export default function App() {
   const { i18n, t } = useTranslation();
-  const { settings, setSettings, resetSettings } = useSettings();
+  const { settings, setSettings, resetSettings, loaded: settingsLoaded } = useSettings();
+  const [migrationStatus, setMigrationStatus] = useState<'checking' | 'running' | 'done' | 'error'>('checking');
   const [form, setForm] = useState<GenerateFormState>(DEFAULT_FORM);
   const [visionForm, setVisionForm] = useState<VisionFormState>(DEFAULT_VISION_FORM);
   const [batchForm, setBatchForm] = useState<BatchFormState>(() => ({
