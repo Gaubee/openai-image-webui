@@ -3,7 +3,7 @@
  * New IA: prompt-first, inline results, secondary panels in drawer
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Menu } from "lucide-react";
 import { GenerationPanel } from "./components/GenerationPanel";
@@ -21,6 +21,7 @@ import { ResultGallery } from "./components/ResultGallery";
 
 import { useImageTasks } from "./hooks/useImageTasks";
 import { useSettings } from "./hooks/useSettings";
+import { useFormPersistence } from "./hooks/useFormPersistence";
 import { shouldRunMigration, runMigration } from "./lib/storageMigration";
 import { requestPersistence } from "./lib/storageNew";
 import { toFriendlyError } from "./lib/errors";
@@ -153,6 +154,26 @@ export default function App() {
   const [activeMode, setActiveMode] = useState<AppMode>("generate");
   const [drawerPanel, setDrawerPanel] = useState<DrawerPanel>(null);
 
+  // Form drafts (prompt/size/advancedJson) persist to IDB kv. The ref keeps
+  // the setters callable from memo-stable callbacks without re-creating them.
+  const formPersistence = useFormPersistence();
+  const formPersistenceRef = useRef(formPersistence);
+  formPersistenceRef.current = formPersistence;
+
+  // One-shot seeding once the persisted draft arrives — only fields the user
+  // has not touched this session get restored.
+  useEffect(() => {
+    if (!formPersistence.loaded) return;
+    const { lastPrompt, lastSize, lastAdvancedJson } = formPersistenceRef.current.draft;
+    setForm((current) => ({
+      ...current,
+      prompt: current.prompt || lastPrompt || "",
+      size: lastSize || current.size,
+      advancedJson: current.advancedJson || lastAdvancedJson || "",
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot seed on load
+  }, [formPersistence.loaded]);
+
   // Run migration on mount and request persistent storage
   useEffect(() => {
     shouldRunMigration().then(shouldRun => {
@@ -220,6 +241,9 @@ export default function App() {
   // otherwise every App render defeats the memoization entirely.
   const updateForm = useCallback((next: Partial<GenerateFormState>) => {
     setForm((current) => ({ ...current, ...next }));
+    if (typeof next.prompt === "string") formPersistenceRef.current.setPrompt(next.prompt);
+    if (typeof next.size === "string") formPersistenceRef.current.setSize(next.size);
+    if (typeof next.advancedJson === "string") formPersistenceRef.current.setAdvancedJson(next.advancedJson);
   }, []);
 
   const updateVisionForm = useCallback((next: Partial<VisionFormState>) => {
@@ -231,6 +255,7 @@ export default function App() {
       const merged = { ...current, ...next };
       if (typeof next.promptsText === "string") {
         saveBatchPrompts(next.promptsText);
+        formPersistenceRef.current.setBatchPrompts(next.promptsText);
       }
       return merged;
     });

@@ -26,7 +26,7 @@ export function Header({ onOpenMenu, onOpenSettings, isConnected }: HeaderProps)
         <button
           type="button"
           onClick={onOpenSettings}
-          className="flex items-center gap-2 rounded px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:bg-surface-1 hover:text-text-primary"
+          className="flex items-center gap-2 rounded px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-1 hover:text-text-primary"
           title={isConnected ? "API connected" : "API not configured"}
         >
           <span
@@ -38,7 +38,7 @@ export function Header({ onOpenMenu, onOpenSettings, isConnected }: HeaderProps)
         <button
           type="button"
           onClick={onOpenMenu}
-          className="rounded p-2 text-text-secondary transition hover:bg-surface-1 hover:text-text-primary"
+          className="rounded p-2 text-text-secondary transition-colors hover:bg-surface-1 hover:text-text-primary"
           aria-label="Open menu"
         >
           <Menu className="h-6 w-6" />

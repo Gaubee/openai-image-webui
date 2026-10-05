@@ -38,7 +38,7 @@ export function ImagePreviewModal({ imageUrl, onClose }: ImagePreviewModalProps)
       />
       <div className="relative max-h-full max-w-6xl overflow-hidden rounded-3xl bg-white p-3 shadow-2xl">
         <button
-          className="absolute right-4 top-4 rounded-full bg-slate-950/80 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-slate-800"
+          className="absolute right-4 top-4 rounded-full bg-slate-950/80 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-slate-800"
           type="button"
           onClick={onClose}
         >

@@ -50,7 +50,7 @@ export function ImageCacheSummary({ stats, onClear }: ImageCacheSummaryProps) {
         </div>
         <button
           type="button"
-          className="self-start rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
+          className="self-start rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
           disabled={stats.count <= 0}
           onClick={handleClear}
         >

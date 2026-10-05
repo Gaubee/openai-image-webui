@@ -40,13 +40,13 @@ function formatElapsed(task: ImageTask) {
 
 function actionButtonClass(variant: "default" | "primary" = "default", disabled = false) {
   if (variant === "primary") {
-    return `rounded border px-3 py-1.5 text-xs font-medium transition inline-flex items-center gap-1.5 ${
+    return `rounded border px-3 py-1.5 text-xs font-medium transition-colors inline-flex items-center gap-1.5 ${
       disabled
         ? "cursor-not-allowed border-surface-3 bg-surface-2 text-text-tertiary"
         : "border-accent bg-accent text-surface-0 hover:bg-accent-dim"
     }`;
   }
-  return `rounded border px-3 py-1.5 text-xs font-medium transition ${
+  return `rounded border px-3 py-1.5 text-xs font-medium transition-colors ${
     disabled
       ? "cursor-not-allowed border-surface-3 bg-surface-2 text-text-tertiary"
       : "border-surface-3 bg-surface-1 text-text-secondary hover:bg-surface-2 hover:text-text-primary"
@@ -54,7 +54,7 @@ function actionButtonClass(variant: "default" | "primary" = "default", disabled 
 }
 
 function menuItemClass(disabled = false, danger = false) {
-  return `block w-full rounded px-3 py-2 text-left text-xs font-medium transition ${
+  return `block w-full rounded px-3 py-2 text-left text-xs font-medium transition-colors ${
     disabled
       ? "cursor-not-allowed text-text-tertiary"
       : danger
@@ -411,9 +411,11 @@ export const TaskCard = memo(function TaskCard({ task, onPreview, onRetry, onCan
                 <div className="my-1 border-t border-surface-3" role="separator" />
                 {/* Developer details in deep space */}
                 <div className="px-3 py-2 text-[10px] text-text-tertiary space-y-0.5">
-                  <div>Elapsed: {formatElapsed(task)}</div>
+                  <div>{t("tasks.elapsed", { value: formatElapsed(task) })}</div>
                   {task.estimatedCostUsd != null && (
-                    <div>Cost: {formatCostUsd(task.estimatedCostUsd)}</div>
+                    <div>
+                      {t("tasks.fields.cost")}: {formatCostUsd(task.estimatedCostUsd)}
+                    </div>
                   )}
                 </div>
                 {hasDebug && (

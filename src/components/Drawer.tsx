@@ -58,7 +58,7 @@ export function Drawer({ open, onClose, title, children }: DrawerProps) {
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded p-1 text-text-secondary transition hover:bg-surface-2 hover:text-text-primary"
+                  className="rounded p-1 text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
                   aria-label="Close"
                 >
                   <X className="h-5 w-5" />

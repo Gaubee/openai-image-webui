@@ -142,7 +142,7 @@ export const BatchGenerationPanel = memo(function BatchGenerationPanel({
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                className="rounded border border-surface-3 bg-surface-1 px-2.5 py-1 text-xs font-medium text-text-secondary transition hover:bg-surface-2 hover:text-text-primary"
+                className="rounded border border-surface-3 bg-surface-1 px-2.5 py-1 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
                 onClick={() => promptFileInputRef.current?.click()}
               >
                 {t("batch.prompts.importButton")}
@@ -156,7 +156,7 @@ export const BatchGenerationPanel = memo(function BatchGenerationPanel({
               />
               <button
                 type="button"
-                className="rounded border border-surface-3 bg-surface-1 px-2.5 py-1 text-xs font-medium text-text-secondary transition hover:bg-error/10 hover:text-error disabled:cursor-not-allowed disabled:text-text-tertiary"
+                className="rounded border border-surface-3 bg-surface-1 px-2.5 py-1 text-xs font-medium text-text-secondary transition-colors hover:bg-error/10 hover:text-error disabled:cursor-not-allowed disabled:text-text-tertiary"
                 onClick={() => onChange({ promptsText: "" })}
                 disabled={!form.promptsText}
               >
@@ -166,7 +166,7 @@ export const BatchGenerationPanel = memo(function BatchGenerationPanel({
           </div>
           <p className="mt-1 text-xs text-text-secondary">{t("batch.prompts.hint")}</p>
           <textarea
-            className="mt-2 min-h-40 w-full resize-y rounded border border-surface-3 bg-surface-1 px-3 py-2.5 font-mono text-sm text-text-primary outline-none transition placeholder:text-text-tertiary focus:border-accent focus:ring-2 focus:ring-accent/30"
+            className="mt-2 min-h-40 w-full resize-y rounded border border-surface-3 bg-surface-1 px-3 py-2.5 font-mono text-sm text-text-primary outline-none transition-colors placeholder:text-text-tertiary focus:border-accent focus:ring-2 focus:ring-accent/30"
             placeholder={t("batch.prompts.placeholder")}
             value={form.promptsText}
             onChange={(event) => onChange({ promptsText: event.target.value })}
@@ -200,7 +200,7 @@ export const BatchGenerationPanel = memo(function BatchGenerationPanel({
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-text-primary">{t("batch.size")}</span>
             <input
-              className="w-full rounded border border-surface-3 bg-surface-1 px-3 py-2.5 text-sm text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/30"
+              className="w-full rounded border border-surface-3 bg-surface-1 px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/30"
               value={form.size}
               placeholder="1024x1024"
               onChange={(event) => onChange({ size: event.target.value })}
@@ -210,7 +210,7 @@ export const BatchGenerationPanel = memo(function BatchGenerationPanel({
                 <button
                   key={s}
                   type="button"
-                  className={`rounded-full border px-2 py-0.5 text-[11px] transition ${
+                  className={`rounded-full border px-2 py-0.5 text-[11px] transition-colors ${
                     form.size.trim() === s
                       ? "border-accent bg-accent text-surface-0"
                       : "border-surface-3 bg-surface-2 text-text-secondary hover:bg-surface-3"
@@ -228,7 +228,7 @@ export const BatchGenerationPanel = memo(function BatchGenerationPanel({
               type="number"
               min={1}
               max={20}
-              className="w-full rounded border border-surface-3 bg-surface-1 px-3 py-2.5 text-sm text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/30"
+              className="w-full rounded border border-surface-3 bg-surface-1 px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/30"
               value={form.countPerPrompt}
               onChange={(event) => onChange({ countPerPrompt: Number(event.target.value) })}
             />
@@ -239,7 +239,7 @@ export const BatchGenerationPanel = memo(function BatchGenerationPanel({
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-text-primary">{t("batch.advancedJsonParams")}</span>
           <textarea
-            className="min-h-24 w-full resize-y rounded border border-surface-3 bg-surface-1 px-3 py-2.5 font-mono text-sm text-text-primary outline-none transition placeholder:text-text-tertiary focus:border-accent focus:ring-2 focus:ring-accent/30"
+            className="min-h-24 w-full resize-y rounded border border-surface-3 bg-surface-1 px-3 py-2.5 font-mono text-sm text-text-primary outline-none transition-colors placeholder:text-text-tertiary focus:border-accent focus:ring-2 focus:ring-accent/30"
             placeholder={'{\n  "quality": "high"\n}'}
             value={form.advancedJson}
             onChange={(event) => onChange({ advancedJson: event.target.value })}
@@ -259,7 +259,7 @@ export const BatchGenerationPanel = memo(function BatchGenerationPanel({
           </p>
           <button
             type="submit"
-            className="mt-2 inline-flex w-full items-center justify-center rounded border border-accent bg-accent px-5 py-3 text-sm font-semibold text-surface-0 transition hover:bg-accent-dim disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-text-tertiary"
+            className="mt-2 inline-flex w-full items-center justify-center rounded border border-accent bg-accent px-5 py-3 text-sm font-semibold text-surface-0 transition-colors hover:bg-accent-dim disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-text-tertiary"
             disabled={parsed.prompts.length === 0}
           >
             {isEditMode ? t("batch.startEdit") : t("batch.startGenerate")}
@@ -290,7 +290,7 @@ export const BatchGenerationPanel = memo(function BatchGenerationPanel({
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
-              className="rounded border border-warning/30 bg-surface-1 px-3 py-1.5 text-xs font-medium text-warning transition hover:bg-warning/10 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded border border-warning/30 bg-surface-1 px-3 py-1.5 text-xs font-medium text-warning transition-colors hover:bg-warning/10 disabled:cursor-not-allowed disabled:opacity-50"
               onClick={onRetryBatchErrors}
               disabled={errorCount === 0}
             >
@@ -298,7 +298,7 @@ export const BatchGenerationPanel = memo(function BatchGenerationPanel({
             </button>
             <button
               type="button"
-              className="rounded border border-accent bg-accent px-3 py-1.5 text-xs font-medium text-surface-0 transition hover:bg-accent-dim disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded border border-accent bg-accent px-3 py-1.5 text-xs font-medium text-surface-0 transition-colors hover:bg-accent-dim disabled:cursor-not-allowed disabled:opacity-50"
               onClick={onExportBatch}
               disabled={successCount === 0 || Boolean(isExporting)}
             >

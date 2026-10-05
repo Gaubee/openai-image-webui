@@ -61,7 +61,7 @@ export function ImageDropzone({
 
   return (
     <div
-      className="rounded border border-surface-3 bg-surface-2 p-3 transition"
+      className="rounded border border-surface-3 bg-surface-2 p-3 transition-colors"
       onDrop={onDrop}
       onDragOver={onDragOver}
     >
@@ -81,7 +81,7 @@ export function ImageDropzone({
             <img src={item.previewUrl} alt={item.file.name} className="h-full w-full object-cover" />
             <button
               type="button"
-              className="absolute right-0 top-0 rounded-bl bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold text-white opacity-0 transition group-hover:opacity-100"
+              className="absolute right-0 top-0 rounded-bl bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold text-white opacity-0 transition-colors group-hover:opacity-100"
               onClick={() => onRemove(item.id)}
             >
               {removeLabel}
@@ -95,7 +95,7 @@ export function ImageDropzone({
         {/* High-contrast add button (Gap #3 fix) */}
         <button
           type="button"
-          className="flex h-20 w-20 items-center justify-center rounded border-2 border-dashed border-accent/50 bg-surface-1 text-xs font-medium text-accent transition hover:border-accent hover:bg-accent/10"
+          className="flex h-20 w-20 items-center justify-center rounded border-2 border-dashed border-accent/50 bg-surface-1 text-xs font-medium text-accent transition-colors hover:border-accent hover:bg-accent/10"
           onClick={() => fileInputRef.current?.click()}
         >
           + {addButtonLabel}

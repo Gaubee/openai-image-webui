@@ -12,7 +12,7 @@ export function Footer() {
         href="https://github.com/tobenot/openai-image-webui"
         target="_blank"
         rel="noreferrer"
-        className="text-detail text-text-tertiary transition hover:text-text-secondary"
+        className="text-detail text-text-tertiary transition-colors hover:text-text-secondary"
       >
         GitHub
       </a>
