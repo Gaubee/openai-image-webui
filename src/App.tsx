@@ -531,7 +531,11 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
   return (
     <div className="min-h-screen bg-surface-0 text-text-primary">
       <div className="mx-auto max-w-6xl px-4 py-6">
-        <Header onOpenMenu={() => setDrawerPanel("settings")} />
+        <Header
+          onOpenMenu={() => setDrawerPanel("settings")}
+          onOpenSettings={() => setDrawerPanel("settings")}
+          isConnected={!!(settings.apiKey.trim() && settings.baseUrl.trim())}
+        />
 
         <StorageHealthBanner />
 
