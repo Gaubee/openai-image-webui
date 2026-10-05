@@ -83,6 +83,9 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
   const [isExporting, setIsExporting] = useState(false);
   const objectUrlsRef = useRef(new Set<string>());
   const virtualGridRef = useRef<HTMLDivElement | null>(null);
+  // The grid element mounts only after items load — state so the measurement
+  // effect can re-attach its ResizeObserver when it appears.
+  const [gridEl, setGridEl] = useState<HTMLDivElement | null>(null);
   const lastClickedIdRef = useRef<string | null>(null);
   const autoScrollRef = useRef<{ direction: -1 | 0 | 1; raf: number }>({ direction: 0, raf: 0 });
 
@@ -240,14 +243,15 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
       scheduleUpdate(true);
     });
 
-    if (virtualGridRef.current) {
-      observer.observe(virtualGridRef.current);
+    // The grid mounts only after items load (async) — re-attach whenever the
+    // element appears, or gridWidth stays 0 and the grid is stuck at 1 column.
+    if (gridEl) {
+      observer.observe(gridEl);
     }
 
     // The library scrolls inside its Drawer (overflow-y-auto), not the window —
     // virtualization must listen to the nearest scrollable ancestor.
-    const scrollParent =
-      (virtualGridRef.current?.closest("aside") as HTMLElement | null) ?? null;
+    const scrollParent = (gridEl?.closest("aside") as HTMLElement | null) ?? null;
 
     const handleScroll = () => scheduleUpdate(false);
     const handleResize = () => scheduleUpdate(true);
@@ -265,7 +269,7 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
       scrollParent?.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", handleResize);
     };
-  }, [updateGridTop, updateViewport]);
+  }, [gridEl, updateGridTop, updateViewport]);
 
 
   const virtualGrid = useMemo(() => {
@@ -696,7 +700,10 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
       ) : (
         <>
           <div
-            ref={virtualGridRef}
+            ref={(el) => {
+              virtualGridRef.current = el;
+              setGridEl(el);
+            }}
             className={`relative ${selectionMode ? "select-none" : ""}`}
             style={{ height: virtualGrid.totalHeight }}
             onMouseDown={handleGridMouseDown}
