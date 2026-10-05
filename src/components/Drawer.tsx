@@ -1,11 +1,11 @@
 /*
  * Intent: Slide-in drawer container for secondary panels (2026-10-05)
- * Slides from right with motion, backdrop, explicit close
+ * Slides from right with motion, backdrop, explicit close, ESC key support
  */
 
 import { motion, AnimatePresence } from "motion/react";
 import { X } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 
 interface DrawerProps {
   open: boolean;
@@ -15,6 +15,19 @@ interface DrawerProps {
 }
 
 export function Drawer({ open, onClose, title, children }: DrawerProps) {
+  useEffect(() => {
+    if (!open) return;
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [open, onClose]);
+
   return (
     <AnimatePresence>
       {open && (
@@ -35,7 +48,8 @@ export function Drawer({ open, onClose, title, children }: DrawerProps) {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="fixed right-0 top-0 z-50 h-full w-full max-w-md overflow-y-auto bg-surface-1 shadow-soft"
+            className="fixed right-0 top-0 z-50 h-full w-full max-w-md overflow-y-auto bg-surface-1 shadow-soft focus:outline-none"
+            tabIndex={-1}
           >
             {/* Header */}
             {title && (
