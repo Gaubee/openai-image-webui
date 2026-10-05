@@ -536,13 +536,13 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
         <StorageHealthBanner />
 
         {/* Mode switcher */}
-        <nav className="mb-6 flex gap-2">
+        <nav className="mb-6 flex gap-3">
           <button
             type="button"
             onClick={() => setActiveMode("generate")}
             className={`rounded px-4 py-2 text-sm font-medium transition ${
               activeMode === "generate"
-                ? "bg-accent text-surface-0"
+                ? "bg-accent text-surface-0 shadow-sm"
                 : "bg-surface-1 text-text-secondary hover:bg-surface-2 hover:text-text-primary"
             }`}
           >
@@ -553,11 +553,32 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
             onClick={() => setActiveMode("batch")}
             className={`rounded px-4 py-2 text-sm font-medium transition ${
               activeMode === "batch"
-                ? "bg-accent text-surface-0"
+                ? "bg-accent text-surface-0 shadow-sm"
                 : "bg-surface-1 text-text-secondary hover:bg-surface-2 hover:text-text-primary"
             }`}
           >
             {t("workspace.modes.batch")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setDrawerPanel("vision")}
+            className="ml-auto rounded border border-surface-3 bg-surface-1 px-4 py-2 text-sm font-medium text-text-secondary transition hover:bg-surface-2 hover:text-text-primary"
+          >
+            {t("workspace.modes.vision")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setDrawerPanel("rename")}
+            className="rounded border border-surface-3 bg-surface-1 px-4 py-2 text-sm font-medium text-text-secondary transition hover:bg-surface-2 hover:text-text-primary"
+          >
+            {t("workspace.modes.rename")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setDrawerPanel("library")}
+            className="rounded border border-surface-3 bg-surface-1 px-4 py-2 text-sm font-medium text-text-secondary transition hover:bg-surface-2 hover:text-text-primary"
+          >
+            {t("library.title")}
           </button>
         </nav>
 
@@ -650,7 +671,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
 
       {/* Toast */}
       {toast ? (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded border border-success bg-surface-1 px-4 py-2 text-sm text-text-primary shadow-soft">
+        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded border border-success/30 bg-surface-1 px-4 py-3 text-sm text-success shadow-soft">
           {toast}
         </div>
       ) : null}
