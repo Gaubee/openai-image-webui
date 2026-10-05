@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { Menu } from "lucide-react";
 import { GenerationPanel } from "./components/GenerationPanel";
 import { Header } from "./components/Header";
+import { Footer } from "./components/Footer";
 import { ImageLibrary } from "./components/ImageLibrary";
 import { ImagePreviewModal } from "./components/ImagePreviewModal";
 import { SettingsPanel } from "./components/SettingsPanel";
@@ -530,21 +531,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
   return (
     <div className="min-h-screen bg-surface-0 text-text-primary">
       <div className="mx-auto max-w-6xl px-4 py-6">
-        {/* Header with hamburger */}
-        <header className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-heading font-semibold">{t("header.title")}</h1>
-            <p className="text-detail text-text-secondary">{t("header.subtitle")}</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setDrawerPanel("settings")}
-            className="rounded p-2 text-text-secondary transition hover:bg-surface-1 hover:text-text-primary"
-            aria-label="Menu"
-          >
-            <Menu className="h-6 w-6" />
-          </button>
-        </header>
+        <Header onOpenMenu={() => setDrawerPanel("settings")} />
 
         <StorageHealthBanner />
 
@@ -610,6 +597,8 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
             />
           )}
         </main>
+
+        <Footer />
       </div>
 
       {/* Drawer navigation */}
