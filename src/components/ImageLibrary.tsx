@@ -70,7 +70,7 @@ function getColumnCount(width: number) {
 }
 
 export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDeleteImage, onClearImageCache, onReuseParams }: ImageLibraryProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [items, setItems] = useState<LibraryImage[]>([]);
   const [hasMore, setHasMore] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -595,8 +595,7 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
     <section className="rounded border border-surface-3 bg-surface-1 p-5">
       <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div className="max-w-2xl">
-          <h2 className="text-lg font-semibold text-text-primary">{t("library.title")}</h2>
-          <p className="mt-1 text-sm text-text-secondary">{t("library.subtitle")}</p>
+          <p className="text-sm text-text-secondary">{t("library.subtitle")}</p>
         </div>
         <div className="shrink-0 rounded-full bg-surface-2 px-3 py-1 text-xs font-medium text-text-tertiary">
           {t("tasks.cache.summary", { count: stats.count, size: formatBytes(stats.size) })}
@@ -610,7 +609,7 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
       {pendingNewCount > 0 ? (
         <button
           type="button"
-          className="mb-4 flex w-full items-center justify-center gap-2 rounded border border-accent bg-accent px-4 py-2.5 text-sm font-medium text-surface-0 transition hover:bg-accent-dim disabled:cursor-not-allowed disabled:opacity-60"
+          className="mb-4 flex w-full items-center justify-center gap-2 rounded border border-accent bg-accent px-4 py-2.5 text-sm font-medium text-surface-0 transition-colors hover:bg-accent-dim disabled:cursor-not-allowed disabled:opacity-60"
           disabled={isLoading}
           onClick={() => void refreshLibrary()}
         >
@@ -625,7 +624,7 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
           {!selectionMode ? (
             <button
               type="button"
-              className="rounded border border-surface-3 bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-primary transition hover:bg-surface-3"
+              className="rounded border border-surface-3 bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-primary transition-colors hover:bg-surface-3"
               onClick={enterSelectionMode}
             >
               {t("library.selection.enter")}
@@ -637,14 +636,14 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
               </span>
               <button
                 type="button"
-                className="rounded border border-surface-3 bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-primary transition hover:bg-surface-3"
+                className="rounded border border-surface-3 bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-primary transition-colors hover:bg-surface-3"
                 onClick={selectAllLoaded}
               >
                 {t("library.selection.selectAll")}
               </button>
               <button
                 type="button"
-                className="rounded border border-surface-3 bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-primary transition hover:bg-surface-3 disabled:cursor-not-allowed disabled:text-text-tertiary"
+                className="rounded border border-surface-3 bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-primary transition-colors hover:bg-surface-3 disabled:cursor-not-allowed disabled:text-text-tertiary"
                 disabled={selectedIds.size === 0}
                 onClick={clearSelection}
               >
@@ -652,7 +651,7 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
               </button>
               <button
                 type="button"
-                className="rounded border border-accent bg-accent px-3 py-1.5 text-xs font-semibold text-surface-0 transition hover:bg-accent-dim disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-text-tertiary"
+                className="rounded border border-accent bg-accent px-3 py-1.5 text-xs font-semibold text-surface-0 transition-colors hover:bg-accent-dim disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-text-tertiary"
                 disabled={selectedIds.size === 0 || isExporting}
                 onClick={() => void handleDownloadSelectedZip()}
               >
@@ -662,7 +661,7 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
               </button>
               <button
                 type="button"
-                className="ml-auto rounded border border-surface-3 bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:bg-surface-3"
+                className="ml-auto rounded border border-surface-3 bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-3"
                 onClick={exitSelectionMode}
               >
                 {t("library.selection.exit")}
@@ -733,7 +732,7 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
             <div className="mt-5 flex justify-center">
               <button
                 type="button"
-                className="rounded border border-surface-3 bg-surface-2 px-4 py-2 text-sm font-medium text-text-primary transition hover:bg-surface-3 disabled:cursor-not-allowed disabled:text-text-tertiary"
+                className="rounded border border-surface-3 bg-surface-2 px-4 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-surface-3 disabled:cursor-not-allowed disabled:text-text-tertiary"
                 disabled={isLoading}
                 onClick={() => void handleLoadMore()}
               >
@@ -772,8 +771,9 @@ const ImageCard = memo(function ImageCard({
   onDelete,
   onToggleSelect,
 }: ImageCardProps) {
+  const { i18n } = useTranslation();
   const cardClass = [
-    "relative flex h-full flex-col overflow-hidden rounded border bg-surface-2 transition",
+    "relative flex h-full flex-col overflow-hidden rounded border bg-surface-2 transition-colors",
     isSelected ? "border-accent ring-2 ring-accent/30" : "border-surface-3",
     selectionMode ? "cursor-pointer select-none" : "",
   ]
@@ -821,7 +821,7 @@ const ImageCard = memo(function ImageCard({
       </button>
       <div className="flex min-h-0 flex-1 flex-col space-y-3 p-3">
         <div className="flex flex-wrap items-center gap-2 text-xs text-text-tertiary">
-          <span>{new Date(item.taskCreatedAt || item.cachedAt).toLocaleString()}</span>
+          <span>{new Date(item.taskCreatedAt || item.cachedAt).toLocaleString(i18n.resolvedLanguage)}</span>
           <span>{formatBytes(item.size)}</span>
         </div>
         <p className="line-clamp-2 min-h-10 text-sm leading-5 text-text-primary">
@@ -840,7 +840,7 @@ const ImageCard = memo(function ImageCard({
         <div className="mt-auto flex flex-wrap gap-2">
           <button
             type="button"
-            className="rounded border border-surface-3 bg-surface-1 px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:bg-surface-2 hover:text-text-primary"
+            className="rounded border border-surface-3 bg-surface-1 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
             onClick={() => onPreview(item.objectUrl)}
             tabIndex={selectionMode ? -1 : 0}
           >
@@ -848,7 +848,7 @@ const ImageCard = memo(function ImageCard({
           </button>
           <button
             type="button"
-            className="rounded border border-surface-3 bg-surface-1 px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:bg-surface-2 hover:text-text-primary"
+            className="rounded border border-surface-3 bg-surface-1 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
             onClick={() => void onDownload(item)}
             tabIndex={selectionMode ? -1 : 0}
           >
@@ -856,7 +856,7 @@ const ImageCard = memo(function ImageCard({
           </button>
           <button
             type="button"
-            className="rounded border border-surface-3 bg-surface-1 px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:bg-surface-2 hover:text-text-primary disabled:cursor-not-allowed disabled:text-text-tertiary"
+            className="rounded border border-surface-3 bg-surface-1 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary disabled:cursor-not-allowed disabled:text-text-tertiary"
             disabled={!item.prompt}
             onClick={() => void onCopyPrompt(item)}
             tabIndex={selectionMode ? -1 : 0}
@@ -865,7 +865,7 @@ const ImageCard = memo(function ImageCard({
           </button>
           <button
             type="button"
-            className="rounded border border-accent bg-accent px-3 py-1.5 text-xs font-medium text-surface-0 transition hover:bg-accent-dim"
+            className="rounded border border-accent bg-accent px-3 py-1.5 text-xs font-medium text-surface-0 transition-colors hover:bg-accent-dim"
             onClick={() => onReuse(item)}
             tabIndex={selectionMode ? -1 : 0}
           >
@@ -873,7 +873,7 @@ const ImageCard = memo(function ImageCard({
           </button>
           <button
             type="button"
-            className="rounded border border-error/30 bg-surface-1 px-3 py-1.5 text-xs font-medium text-error transition hover:bg-error/10"
+            className="rounded border border-error/30 bg-surface-1 px-3 py-1.5 text-xs font-medium text-error transition-colors hover:bg-error/10"
             onClick={() => onDelete(item)}
             tabIndex={selectionMode ? -1 : 0}
           >

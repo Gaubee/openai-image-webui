@@ -163,15 +163,14 @@ export const BatchRenamePanel = memo(function BatchRenamePanel({ settings }: Bat
   return (
     <section className="rounded border border-surface-3 bg-surface-1 p-5">
       <div className="mb-5">
-        <h2 className="text-lg font-semibold text-text-primary">{t("batchRename.title")}</h2>
-        <p className="mt-1 text-sm text-text-secondary">{t("batchRename.subtitle")}</p>
+        <p className="text-sm text-text-secondary">{t("batchRename.subtitle")}</p>
       </div>
 
       <div className="space-y-4">
 
       {/* Drop zone */}
       <div
-        className={`flex min-h-[120px] cursor-pointer flex-col items-center justify-center rounded border-2 border-dashed transition ${
+        className={`flex min-h-[120px] cursor-pointer flex-col items-center justify-center rounded border-2 border-dashed transition-colors ${
           isDragging
             ? "border-accent bg-accent/10"
             : "border-surface-3 bg-surface-2 hover:border-surface-4"
@@ -199,7 +198,7 @@ export const BatchRenamePanel = memo(function BatchRenamePanel({ settings }: Bat
         <div className="inline-flex rounded border border-surface-3 bg-surface-2 p-0.5">
           <button
             type="button"
-            className={`rounded px-3 py-1 text-xs font-medium transition ${
+            className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
               namingMode === "compact"
                 ? "bg-accent text-surface-0"
                 : "text-text-secondary hover:text-text-primary"
@@ -210,7 +209,7 @@ export const BatchRenamePanel = memo(function BatchRenamePanel({ settings }: Bat
           </button>
           <button
             type="button"
-            className={`rounded px-3 py-1 text-xs font-medium transition ${
+            className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
               namingMode === "descriptive"
                 ? "bg-accent text-surface-0"
                 : "text-text-secondary hover:text-text-primary"
@@ -318,7 +317,7 @@ export const BatchRenamePanel = memo(function BatchRenamePanel({ settings }: Bat
           <button
             type="button"
             disabled={items.length === 0 || !settingsOk}
-            className="rounded border border-accent bg-accent px-5 py-3 text-sm font-semibold text-surface-0 transition hover:bg-accent-dim disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-text-tertiary"
+            className="rounded border border-accent bg-accent px-5 py-3 text-sm font-semibold text-surface-0 transition-colors hover:bg-accent-dim disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-text-tertiary"
             onClick={startRename}
           >
             {t("batchRename.start")}
@@ -326,7 +325,7 @@ export const BatchRenamePanel = memo(function BatchRenamePanel({ settings }: Bat
         ) : (
           <button
             type="button"
-            className="rounded border border-error bg-error px-5 py-3 text-sm font-semibold text-surface-0 transition hover:bg-error/80"
+            className="rounded border border-error bg-error px-5 py-3 text-sm font-semibold text-surface-0 transition-colors hover:bg-error/80"
             onClick={stopProcessing}
           >
             {t("batchRename.stop")}
@@ -336,7 +335,7 @@ export const BatchRenamePanel = memo(function BatchRenamePanel({ settings }: Bat
         <button
           type="button"
           disabled={!canDownload}
-          className="rounded border border-surface-3 bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:bg-surface-3 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded border border-surface-3 bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
           onClick={() => downloadScriptZip(items)}
         >
           {t("batchRename.downloadScript")}
@@ -345,7 +344,7 @@ export const BatchRenamePanel = memo(function BatchRenamePanel({ settings }: Bat
         <button
           type="button"
           disabled={!canDownload}
-          className="rounded border border-surface-3 bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:bg-surface-3 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded border border-surface-3 bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
           onClick={() => downloadRenamedZip(items)}
         >
           {t("batchRename.downloadZip")}
@@ -354,7 +353,7 @@ export const BatchRenamePanel = memo(function BatchRenamePanel({ settings }: Bat
         {items.length > 0 && !isProcessing && (
           <button
             type="button"
-            className="rounded border border-surface-3 bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:bg-error/10 hover:text-error"
+            className="rounded border border-surface-3 bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-error/10 hover:text-error"
             onClick={clearAll}
           >
             {t("batchRename.clear")}
