@@ -1,10 +1,11 @@
 /*
- * Intent: Main application shell with migration, drawer navigation, inline results (2026-10-05)
- * Original requirement: v1 redesign per Stage 0 IA (2-mode canvas, drawer nav, IDB storage)
+ * Intent: Main application shell with IDB storage, migration, and workspace management (2026-10-05)
+ * Original requirement: v1 redesign - IDB storage, migration on mount, preserve all existing functionality
  */
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { Sparkles, Eye, Grid2x2, Edit3 } from "lucide-react";
 import { GenerationPanel } from "./components/GenerationPanel";
 import { Header } from "./components/Header";
 import { ImageLibrary } from "./components/ImageLibrary";
@@ -103,32 +104,10 @@ type WorkspacePanel = "tasks" | "library";
 type WorkspaceMode = "generate" | "vision" | "rename" | "batch";
 
 const MODE_ICONS: Record<WorkspaceMode, ReactNode> = {
-  generate: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0">
-      <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z" />
-      <path d="M19 15l.7 1.8L21.5 17.5l-1.8.7L19 20l-.7-1.8-1.8-.7 1.8-.7L19 15z" />
-    </svg>
-  ),
-  vision: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0">
-      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  ),
-  batch: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0">
-      <rect x="3" y="3" width="7" height="7" rx="1.5" />
-      <rect x="14" y="3" width="7" height="7" rx="1.5" />
-      <rect x="3" y="14" width="7" height="7" rx="1.5" />
-      <rect x="14" y="14" width="7" height="7" rx="1.5" />
-    </svg>
-  ),
-  rename: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0">
-      <path d="M12 20h9" />
-      <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
-    </svg>
-  ),
+  generate: <Sparkles className="h-3.5 w-3.5 shrink-0" />,
+  vision: <Eye className="h-3.5 w-3.5 shrink-0" />,
+  batch: <Grid2x2 className="h-3.5 w-3.5 shrink-0" />,
+  rename: <Edit3 className="h-3.5 w-3.5 shrink-0" />,
 };
 
 /** Build an {@link InputImageFile} from a File with a fresh object URL. */
