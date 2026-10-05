@@ -1,6 +1,6 @@
 {
   "name": "openai-image-webui",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "A pure frontend image generation WebUI for OpenAI-compatible Images APIs. Bring your own API key and endpoint.",
   "private": false,
   "type": "module",
@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "predeploy": "npm run build",
+    "predeploy": "pnpm run build",
     "deploy": "gh-pages -d dist"
   },
   "keywords": [
@@ -26,19 +26,23 @@
   "dependencies": {
     "i18next": "^26.0.8",
     "i18next-browser-languagedetector": "^8.2.1",
+    "idb": "^8.0.1",
     "jszip": "^3.10.1",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "lucide-react": "^0.468.0",
+    "motion": "^11.14.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "react-i18next": "^17.0.6"
   },
   "devDependencies": {
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "gh-pages": "^6.2.0",
     "postcss": "^8.4.49",
-    "tailwindcss": "^3.4.17",
+    "tailwindcss": "^4.0.0",
     "typescript": "^5.7.2",
     "vite": "^6.0.3"
   }
