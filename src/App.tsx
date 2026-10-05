@@ -22,12 +22,10 @@ import { ResultGallery } from "./components/ResultGallery";
 import { useImageTasks } from "./hooks/useImageTasks";
 import { useSettings } from "./hooks/useSettings";
 import { useFormPersistence } from "./hooks/useFormPersistence";
-import { shouldRunMigration, runMigration } from "./lib/storageMigration";
-import { requestPersistence } from "./lib/storageNew";
 import { toFriendlyError } from "./lib/errors";
 import { parseAdvancedJson } from "./lib/parseAdvancedJson";
 import { stripGeminiSizeArtifacts } from "./lib/imageSizing";
-import { DEFAULT_BATCH_FORM, DEFAULT_FORM, DEFAULT_VISION_FORM, loadBatchPrompts, saveBatchPrompts } from "./lib/storage";
+import { DEFAULT_BATCH_FORM, DEFAULT_FORM, DEFAULT_VISION_FORM } from "./lib/storage";
 import { toInputImageFile } from "./lib/imageInput";
 import { createBatchId, parsePromptList } from "./lib/promptList";
 import { downloadBatchZip, getTaskBatchId } from "./lib/batchExport";
@@ -118,14 +116,11 @@ function makeInputImageFile(file: File, width = 0, height = 0): InputImageFile {
 
 export default function App() {
   const { i18n, t } = useTranslation();
-  const { settings, setSettings, resetSettings, loaded: settingsLoaded } = useSettings();
+  const { settings, setSettings, resetSettings } = useSettings();
   const [migrationStatus, setMigrationStatus] = useState<'checking' | 'running' | 'done' | 'error'>('checking');
   const [form, setForm] = useState<GenerateFormState>(DEFAULT_FORM);
   const [visionForm, setVisionForm] = useState<VisionFormState>(DEFAULT_VISION_FORM);
-  const [batchForm, setBatchForm] = useState<BatchFormState>(() => ({
-    ...DEFAULT_BATCH_FORM,
-    promptsText: loadBatchPrompts(),
-  }));
+  const [batchForm, setBatchForm] = useState<BatchFormState>(DEFAULT_BATCH_FORM);
   const [formError, setFormError] = useState("");
   const [visionError, setVisionError] = useState("");
   const [batchError, setBatchError] = useState("");
@@ -161,40 +156,26 @@ export default function App() {
   formPersistenceRef.current = formPersistence;
 
   // One-shot seeding once the persisted draft arrives — only fields the user
-  // has not touched this session get restored.
+  // has not touched this session get restored. Batch prompts live in the same
+  // kv store (migrated from localStorage by storageMigration).
   useEffect(() => {
     if (!formPersistence.loaded) return;
-    const { lastPrompt, lastSize, lastAdvancedJson } = formPersistenceRef.current.draft;
+    const { lastPrompt, lastSize, lastAdvancedJson, lastBatchPrompts } = formPersistenceRef.current.draft;
     setForm((current) => ({
       ...current,
       prompt: current.prompt || lastPrompt || "",
       size: lastSize || current.size,
       advancedJson: current.advancedJson || lastAdvancedJson || "",
     }));
+    if (lastBatchPrompts !== undefined) {
+      setBatchForm((current) => ({ ...current, promptsText: current.promptsText || lastBatchPrompts }));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot seed on load
   }, [formPersistence.loaded]);
 
   // Run migration on mount and request persistent storage
-  useEffect(() => {
-    shouldRunMigration().then(shouldRun => {
-      if (!shouldRun) return;
-      
-      runMigration().then(result => {
-        if (result.success) {
-          console.log('✅ Storage migration completed successfully');
-        } else {
-          console.error('❌ Storage migration failed:', result.error);
-          setToast(t('settings.migrationFailed') || 'Storage migration failed');
-        }
-      });
-    });
-    
-    requestPersistence().then(granted => {
-      if (granted) {
-        console.log('✅ Persistent storage granted');
-      }
-    });
-  }, [t]);
+  // NOTE: storage migration itself runs in main.tsx bootstrap BEFORE this
+  // component renders — hooks below therefore always read post-migration IDB.
 
   const {
     tasks,
@@ -254,7 +235,6 @@ export default function App() {
     setBatchForm((current) => {
       const merged = { ...current, ...next };
       if (typeof next.promptsText === "string") {
-        saveBatchPrompts(next.promptsText);
         formPersistenceRef.current.setBatchPrompts(next.promptsText);
       }
       return merged;
@@ -630,18 +610,30 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
               />
             </div>
           ) : (
-            <BatchGenerationPanel
-              form={batchForm}
-              error={batchError}
-              model={settings.model}
-              tasks={tasks}
-              currentBatchId={currentBatchId}
-              isExporting={isExportingBatch}
-              onChange={updateBatchForm}
-              onSubmit={handleBatchGenerate}
-              onRetryBatchErrors={handleRetryBatchErrors}
-              onExportBatch={handleExportBatchClick}
-            />
+            <div className="space-y-6">
+              <BatchGenerationPanel
+                form={batchForm}
+                error={batchError}
+                model={settings.model}
+                tasks={tasks}
+                currentBatchId={currentBatchId}
+                isExporting={isExportingBatch}
+                onChange={updateBatchForm}
+                onSubmit={handleBatchGenerate}
+                onRetryBatchErrors={handleRetryBatchErrors}
+                onExportBatch={handleExportBatchClick}
+              />
+              <ResultGallery
+                id="batch-results"
+                tasks={currentBatchId ? tasks.filter((task) => getTaskBatchId(task) === currentBatchId) : tasks}
+                onPreview={setPreviewUrl}
+                onRetry={retryTask}
+                onCancel={cancelTask}
+                onRemove={removeTask}
+                onClearTaskImage={clearTaskImage}
+                onReuseParams={handleReuseTask}
+              />
+            </div>
           )}
         </main>
 

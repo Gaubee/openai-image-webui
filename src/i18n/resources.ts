@@ -1,3 +1,8 @@
+/*
+ * Intent: zh/en translation tree — single source of UI copy (2026-10-05)
+ * Original requirement: bilingual UI; keys must stay in parity across locales
+ */
+
 export const LANGUAGE_STORAGE_KEY = "openai-image-webui:language";
 
 export const SUPPORTED_LANGUAGES = ["en", "zh-CN"] as const;
@@ -29,11 +34,15 @@ export const resources = {
           notConnected: "Not connected",
         },
       },
+      common: {
+        close: "Close",
+      },
       settings: {
         title: "API Settings",
         subtitle: "Bring your own endpoint and key.",
         reset: "Reset",
         edit: "Edit",
+        migrationFailed: "Storage migration failed — recent localStorage data could not be imported. Your old data is still intact.",
         fold: "Fold",
         providerPresets: "Provider Presets",
         presetsNote:
@@ -390,12 +399,21 @@ export const resources = {
         badge: "纯浏览器 BYOK",
         title: "OpenAI 图片 WebUI",
         subtitle: "面向 OpenAI 兼容 API 的纯前端 BYOK 图片生成工具。",
+        openMenu: "打开菜单",
+        status: {
+          connected: "已连接",
+          notConnected: "未连接",
+        },
+      },
+      common: {
+        close: "关闭",
       },
       settings: {
         title: "API 设置",
         subtitle: "填写你自己的接口地址和密钥。",
         reset: "重置",
         edit: "编辑",
+        migrationFailed: "存储迁移失败——旧数据未能导入，你的原有数据仍保留在原处。",
         fold: "收起",
         providerPresets: "服务商预设",
         presetsNote: "预设只会填充 Base URL、模型和响应格式，你仍然需要使用自己的 API Key。",

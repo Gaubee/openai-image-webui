@@ -391,7 +391,15 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
         autoScrollRef.current.raf = 0;
         return;
       }
-      window.scrollBy(0, autoScrollRef.current.direction * AUTO_SCROLL_SPEED);
+      const delta = autoScrollRef.current.direction * AUTO_SCROLL_SPEED;
+      // Marquee selection lives inside the Drawer — scroll its container,
+      // falling back to the window when rendered standalone.
+      const scrollParent = resolveScrollParent();
+      if (scrollParent) {
+        scrollParent.scrollBy(0, delta);
+      } else {
+        window.scrollBy(0, delta);
+      }
       autoScrollRef.current.raf = requestAnimationFrame(tick);
     };
     autoScrollRef.current.raf = requestAnimationFrame(tick);

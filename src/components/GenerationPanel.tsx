@@ -1,3 +1,10 @@
+/*
+ * Intent: prompt-first generation form — size picked via ratio chips with
+ * precise controls collapsed (2026-10-05, R3 convergence 2026-10-06)
+ * Original requirement: prompt as hero, secondary controls in deep space,
+ * img2img input images + mask preserved from main branch
+ */
+
 import { useEffect, useMemo, useRef, useState, memo, type ChangeEvent, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, Minus, Plus } from "lucide-react";

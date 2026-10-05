@@ -1,3 +1,8 @@
+/*
+ * Intent: zh/en language selector in the footer (2026-10-05)
+ * Original requirement: bilingual UI with persisted language choice
+ */
+
 import { useTranslation } from "react-i18next";
 import { SUPPORTED_LANGUAGES, type SupportedLanguage } from "../i18n/resources";
 

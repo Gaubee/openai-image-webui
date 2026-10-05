@@ -1,3 +1,8 @@
+/*
+ * Intent: full-screen image lightbox with ESC/backdrop close (2026-10-05)
+ * Original requirement: enlarge generated images without leaving the page
+ */
+
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 

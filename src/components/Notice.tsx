@@ -1,3 +1,8 @@
+/*
+ * Intent: Themed notice banner with semantic variants (2026-10-06)
+ * Original requirement: dark-theme notices; amber reserved for warning only
+ */
+
 type NoticeVariant = "info" | "warning" | "error" | "success";
 
 interface NoticeProps {

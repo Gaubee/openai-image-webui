@@ -8,27 +8,43 @@
  * - Migration: one-time import from localStorage, delete old keys only after successful write
  */
 
-import { openDB, type IDBPDatabase } from 'idb';
+import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { AppSettings, ImageTask } from '../types';
 
 const DB_NAME = 'openai-image-webui';
 const DB_VERSION = 1;
 
-interface StorageSchema {
+/** Known kv keys — extends as new form drafts / state entries are added. */
+type KVKey = 'lastPrompt' | 'lastSize' | 'lastAdvancedJson' | 'lastBatchPrompts' | 'currentBatchId';
+
+type KVValueMap = {
+  lastPrompt: string;
+  lastSize: string;
+  lastAdvancedJson: string;
+  lastBatchPrompts: string;
+  currentBatchId: string;
+};
+
+/**
+ * Extends idb's DBSchema so store/key/value types flow through every call —
+ * without `extends DBSchema` idb degrades StoreValue to `any` and tsc proves
+ * nothing about the storage API.
+ */
+interface StorageSchema extends DBSchema {
   settings: {
-    key: string; // always "default"
-    value: AppSettings;
+    key: 'default';
+    value: { key: 'default'; value: AppSettings };
   };
   tasks: {
     key: string; // task.id
-    value: ImageTask;
+    value: { key: string; value: ImageTask };
     indexes: {
-      createdAt: number;
+      createdAt: number; // index path: value.createdAt
     };
   };
   kv: {
-    key: string;
-    value: unknown;
+    key: KVKey;
+    value: { key: KVKey; value: KVValueMap[KVKey] };
   };
 }
 
@@ -99,18 +115,18 @@ export async function clearTasks(): Promise<void> {
 }
 
 // KV store (form state, batch ID)
-export async function getKV(key: string): Promise<unknown> {
+export async function getKV<K extends KVKey>(key: K): Promise<KVValueMap[K] | undefined> {
   const db = await getDB();
   const record = await db.get('kv', key);
-  return record?.value;
+  return record?.value as KVValueMap[K] | undefined;
 }
 
-export async function setKV(key: string, value: unknown): Promise<void> {
+export async function setKV<K extends KVKey>(key: K, value: KVValueMap[K]): Promise<void> {
   const db = await getDB();
-  await db.put('kv', { key, value });
+  await db.put('kv', { key, value } as { key: KVKey; value: KVValueMap[KVKey] });
 }
 
-export async function deleteKV(key: string): Promise<void> {
+export async function deleteKV<K extends KVKey>(key: K): Promise<void> {
   const db = await getDB();
   await db.delete('kv', key);
 }

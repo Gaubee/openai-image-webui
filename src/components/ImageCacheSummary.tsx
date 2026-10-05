@@ -1,3 +1,8 @@
+/*
+ * Intent: image-cache stats card with clear action (2026-10-05)
+ * Original requirement: surface cache size and eviction control in the library
+ */
+
 import { useTranslation } from "react-i18next";
 import type { ImageCacheStats } from "../types";
 

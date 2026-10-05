@@ -6,6 +6,7 @@
 import { motion, AnimatePresence } from "motion/react";
 import { X } from "lucide-react";
 import { type ReactNode, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 interface DrawerProps {
   open: boolean;
@@ -15,6 +16,7 @@ interface DrawerProps {
 }
 
 export function Drawer({ open, onClose, title, children }: DrawerProps) {
+  const { t } = useTranslation();
   useEffect(() => {
     if (!open) return;
 
@@ -59,7 +61,7 @@ export function Drawer({ open, onClose, title, children }: DrawerProps) {
                   type="button"
                   onClick={onClose}
                   className="rounded p-1 text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
-                  aria-label="Close"
+                  aria-label={t("common.close")}
                 >
                   <X className="h-5 w-5" />
                 </button>

@@ -19,7 +19,7 @@ import {
 import { toFriendlyError } from "../lib/errors";
 import { buildCompatibleImageRequest } from "../lib/imageSizing";
 import { estimateImageCost, estimateTokenCost, extractUsageFromRaw } from "../lib/pricing";
-import { getTasks, addTask, updateTask, deleteTask, clearTasks } from "../lib/storageNew";
+import { getTasks, addTask, updateTask, deleteTask, clearTasks as clearStoredTasks } from "../lib/storageNew";
 import { reportStorageIssue } from "../lib/storageHealth";
 import { generateThumbnail } from "../lib/thumbnail";
 import type { AppSettings, GenerateFormState, ImageCacheStats, ImageTask, InputImageFile, VisionFormState } from "../types";
@@ -867,6 +867,8 @@ export function useImageTasks(settings: AppSettings) {
     objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
     objectUrlsRef.current.clear();
     setTasks([]);
+    // "Clear tasks" must also mean cleared after a reload — drop the IDB history.
+    void clearStoredTasks().catch((error) => console.warn("[useImageTasks] failed to clear stored tasks", error));
   }
 
 
