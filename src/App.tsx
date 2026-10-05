@@ -1,22 +1,22 @@
 /*
- * Intent: Main application shell with IDB storage, migration, and workspace management (2026-10-05)
- * Original requirement: v1 redesign - IDB storage, migration on mount, preserve all existing functionality
+ * Intent: Main app shell - dual-mode canvas (Generate/Batch), drawer navigation (2026-10-05)
+ * New IA: prompt-first, inline results, secondary panels in drawer
  */
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Sparkles, Eye, Grid2x2, Edit3 } from "lucide-react";
+import { Menu } from "lucide-react";
 import { GenerationPanel } from "./components/GenerationPanel";
 import { Header } from "./components/Header";
 import { ImageLibrary } from "./components/ImageLibrary";
 import { ImagePreviewModal } from "./components/ImagePreviewModal";
-import { Notice } from "./components/Notice";
 import { SettingsPanel } from "./components/SettingsPanel";
-import { TaskQueue } from "./components/TaskQueue";
 import { VisionPanel } from "./components/VisionPanel";
 import { BatchRenamePanel } from "./components/BatchRenamePanel";
 import { BatchGenerationPanel } from "./components/BatchGenerationPanel";
 import { StorageHealthBanner } from "./components/StorageHealthBanner";
+import { Drawer } from "./components/Drawer";
+import { ResultGallery } from "./components/ResultGallery";
 
 import { useImageTasks } from "./hooks/useImageTasks";
 import { useSettings } from "./hooks/useSettings";
@@ -100,15 +100,8 @@ function validateVisionRequest(
   }
 }
 
-type WorkspacePanel = "tasks" | "library";
-type WorkspaceMode = "generate" | "vision" | "rename" | "batch";
-
-const MODE_ICONS: Record<WorkspaceMode, ReactNode> = {
-  generate: <Sparkles className="h-3.5 w-3.5 shrink-0" />,
-  vision: <Eye className="h-3.5 w-3.5 shrink-0" />,
-  batch: <Grid2x2 className="h-3.5 w-3.5 shrink-0" />,
-  rename: <Edit3 className="h-3.5 w-3.5 shrink-0" />,
-};
+type AppMode = "generate" | "batch";
+type DrawerPanel = "settings" | "library" | "vision" | "rename" | null;
 
 /** Build an {@link InputImageFile} from a File with a fresh object URL. */
 function makeInputImageFile(file: File, width = 0, height = 0): InputImageFile {
@@ -156,8 +149,8 @@ export default function App() {
   }, [currentBatchId]);
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [activePanel, setActivePanel] = useState<WorkspacePanel>("tasks");
-  const [activeMode, setActiveMode] = useState<WorkspaceMode>("generate");
+  const [activeMode, setActiveMode] = useState<AppMode>("generate");
+  const [drawerPanel, setDrawerPanel] = useState<DrawerPanel>(null);
 
   // Run migration on mount and request persistent storage
   useEffect(() => {
@@ -304,10 +297,9 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
       };
     });
 
-    // Switch back to the generate workspace so the applied params are
-    // actually visible — the form lives behind the mode switch.
+    // Switch to Generate mode to show the applied params
     setActiveMode("generate");
-    setActivePanel("tasks");
+    setDrawerPanel(null);
     setFormError("");
     window.scrollTo({ top: 0, behavior: "smooth" });
 
@@ -422,7 +414,6 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
         mustBeObject: t("errors.advancedJsonObject"),
       });
       addTasks(normalizedForm, extraParams);
-      setActivePanel("tasks");
       // Keep inputImages/maskImage in the form — user may want to tweak the
       // prompt and re-submit. Revoking their object URLs here would break
       // the in-flight task's preview data too. They get cleared when the
@@ -459,7 +450,6 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
         mustBeObject: t("errors.advancedJsonObject"),
       });
       addVisionTask(normalizedForm, extraParams);
-      setActivePanel("tasks");
       setVisionForm((current) => ({ ...current, prompt: normalizedForm.prompt }));
     } catch (error) {
       setVisionError(
@@ -499,7 +489,6 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
         batchId,
       });
       setCurrentBatchId(batchId);
-      setActivePanel("tasks");
     } catch (error) {
       setBatchError(
         toFriendlyError(error, {
@@ -539,112 +528,64 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
   }, [handleExportBatch]);
 
   return (
-
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_#e0f2fe,_transparent_34rem),linear-gradient(135deg,_#f8fafc,_#eef2ff)] px-4 py-6 text-slate-900 md:px-8">
-      <div className="mx-auto max-w-7xl">
-        <Header taskCount={tasks.length} onClearTasks={clearTasks} />
+    <div className="min-h-screen bg-surface-0 text-text-primary">
+      <div className="mx-auto max-w-6xl px-4 py-6">
+        {/* Header with hamburger */}
+        <header className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-heading font-semibold">{t("header.title")}</h1>
+            <p className="text-detail text-text-secondary">{t("header.subtitle")}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDrawerPanel("settings")}
+            className="rounded p-2 text-text-secondary transition hover:bg-surface-1 hover:text-text-primary"
+            aria-label="Menu"
+          >
+            <Menu className="h-6 w-6" />
+          </button>
+        </header>
 
         <StorageHealthBanner />
 
-        <main className="grid gap-6 grid-cols-1 lg:grid-cols-[380px_1fr] items-start">
-          {/* LEFT COLUMN: SUPER CONTROL CENTER (STICKY ON DESKTOP) */}
-          <aside className="lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto lg:pr-2 space-y-6">
-            <SettingsPanel settings={settings} onChange={setSettings} onReset={resetSettings} />
+        {/* Mode switcher */}
+        <nav className="mb-6 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveMode("generate")}
+            className={`rounded px-4 py-2 text-sm font-medium transition ${
+              activeMode === "generate"
+                ? "bg-accent text-surface-0"
+                : "bg-surface-1 text-text-secondary hover:bg-surface-2 hover:text-text-primary"
+            }`}
+          >
+            {t("workspace.modes.generate")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveMode("batch")}
+            className={`rounded px-4 py-2 text-sm font-medium transition ${
+              activeMode === "batch"
+                ? "bg-accent text-surface-0"
+                : "bg-surface-1 text-text-secondary hover:bg-surface-2 hover:text-text-primary"
+            }`}
+          >
+            {t("workspace.modes.batch")}
+          </button>
+        </nav>
 
-            {/* Workspace Mode Selection */}
-            <nav aria-label={t("workspace.modes.generate")} className="grid grid-cols-2 gap-2">
-              {(["generate", "vision", "batch", "rename"] as const).map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  aria-pressed={activeMode === mode}
-                  className={`rounded-2xl border p-3 text-left transition ${
-                    activeMode === mode
-                      ? "border-slate-950 bg-slate-950 text-white shadow-soft"
-                      : "border-white/70 bg-white/75 text-slate-600 backdrop-blur hover:border-slate-300 hover:bg-white hover:text-slate-900"
-                  }`}
-                  onClick={() => setActiveMode(mode)}
-                >
-                  <span className="flex items-center gap-1.5 text-sm font-semibold">
-                    {MODE_ICONS[mode]}
-                    {t(`workspace.modes.${mode}`)}
-                  </span>
-                  <span
-                    className={`mt-1 block text-[11px] leading-4 ${
-                      activeMode === mode ? "text-slate-300" : "text-slate-400"
-                    }`}
-                  >
-                    {t(`workspace.modeDescriptions.${mode}`)}
-                  </span>
-                </button>
-              ))}
-            </nav>
-
-            {/* Active Input Panel */}
-            {activeMode === "generate" ? (
-              <GenerationPanel form={form} error={formError} model={settings.model} onChange={updateForm} onSubmit={handleGenerate} />
-            ) : activeMode === "vision" ? (
-              <VisionPanel form={visionForm} error={visionError} visionModel={settings.visionModel} onChange={updateVisionForm} onSubmit={handleAnalyzeImages} />
-            ) : activeMode === "batch" ? (
-              <BatchGenerationPanel
-                form={batchForm}
-                error={batchError}
+        {/* Main canvas */}
+        <main>
+          {activeMode === "generate" ? (
+            <div className="space-y-6">
+              <GenerationPanel
+                form={form}
+                error={formError}
                 model={settings.model}
-                tasks={tasks}
-                currentBatchId={currentBatchId}
-                isExporting={isExportingBatch}
-                onChange={updateBatchForm}
-                onSubmit={handleBatchGenerate}
-                onRetryBatchErrors={handleRetryBatchErrors}
-                onExportBatch={handleExportBatchClick}
+                onChange={updateForm}
+                onSubmit={handleGenerate}
               />
-            ) : (
-              <BatchRenamePanel settings={settings} />
-            )}
-
-            <Notice>{t("notice.cors")}</Notice>
-          </aside>
-
-          {/* RIGHT COLUMN: PURE GALLERY / OUTPUT PANEL */}
-          <div className="space-y-6">
-            {/* Viewport Select Tab (Tasks vs Library) */}
-            <div className="rounded-2xl border border-white/70 bg-white/75 p-1 shadow-sm backdrop-blur">
-              <div className="grid grid-cols-2 gap-1">
-                {(["tasks", "library"] as const).map((panel) => {
-                  const badge = panel === "tasks" ? activeTaskCount : cacheStats.count;
-                  return (
-                    <button
-                      key={panel}
-                      type="button"
-                      aria-pressed={activePanel === panel}
-                      className={`flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition ${
-                        activePanel === panel
-                          ? "bg-slate-950 text-white shadow-sm"
-                          : "text-slate-500 hover:bg-white hover:text-slate-900"
-                      }`}
-                      onClick={() => setActivePanel(panel)}
-                    >
-                      {t(`workspace.tabs.${panel}`)}
-                      {badge > 0 ? (
-                        <span
-                          className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none ${
-                            activePanel === panel
-                              ? "bg-white/20 text-white"
-                              : "bg-slate-200 text-slate-600"
-                          }`}
-                        >
-                          {badge}
-                        </span>
-                      ) : null}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Active Output Area (Tasks or Library Grid) */}
-            {activePanel === "tasks" ? (
-              <TaskQueue
+              <ResultGallery
                 tasks={tasks}
                 onPreview={setPreviewUrl}
                 onRetry={retryTask}
@@ -653,24 +594,74 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
                 onClearTaskImage={clearTaskImage}
                 onReuseParams={handleReuseTask}
               />
-            ) : (
-              <ImageLibrary
-                stats={cacheStats}
-                onPreview={setPreviewUrl}
-                onDeleteImage={clearTaskImage}
-                onReuseParams={handleReuseParams}
-                onClearImageCache={clearCachedImages}
-              />
-            )}
-          </div>
+            </div>
+          ) : (
+            <BatchGenerationPanel
+              form={batchForm}
+              error={batchError}
+              model={settings.model}
+              tasks={tasks}
+              currentBatchId={currentBatchId}
+              isExporting={isExportingBatch}
+              onChange={updateBatchForm}
+              onSubmit={handleBatchGenerate}
+              onRetryBatchErrors={handleRetryBatchErrors}
+              onExportBatch={handleExportBatchClick}
+            />
+          )}
         </main>
       </div>
 
+      {/* Drawer navigation */}
+      <Drawer
+        open={drawerPanel === "settings"}
+        onClose={() => setDrawerPanel(null)}
+        title={t("settings.title")}
+      >
+        <SettingsPanel settings={settings} onChange={setSettings} onReset={resetSettings} />
+      </Drawer>
+
+      <Drawer
+        open={drawerPanel === "library"}
+        onClose={() => setDrawerPanel(null)}
+        title={t("library.title")}
+      >
+        <ImageLibrary
+          stats={cacheStats}
+          onPreview={setPreviewUrl}
+          onDeleteImage={clearTaskImage}
+          onReuseParams={handleReuseParams}
+          onClearImageCache={clearCachedImages}
+        />
+      </Drawer>
+
+      <Drawer
+        open={drawerPanel === "vision"}
+        onClose={() => setDrawerPanel(null)}
+        title={t("vision.title")}
+      >
+        <VisionPanel
+          form={visionForm}
+          error={visionError}
+          visionModel={settings.visionModel}
+          onChange={updateVisionForm}
+          onSubmit={handleAnalyzeImages}
+        />
+      </Drawer>
+
+      <Drawer
+        open={drawerPanel === "rename"}
+        onClose={() => setDrawerPanel(null)}
+        title={t("batchRename.title")}
+      >
+        <BatchRenamePanel settings={settings} />
+      </Drawer>
+
       <ImagePreviewModal imageUrl={previewUrl} onClose={closePreview} />
 
-      {/* Toast notification */}
+      {/* Toast */}
       {toast ? (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 animate-fade-in rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-medium text-emerald-700 shadow-lg">
+        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded border border-success bg-surface-1 px-4 py-2 text-sm text-text-primary shadow-soft">
           {toast}
         </div>
       ) : null}
