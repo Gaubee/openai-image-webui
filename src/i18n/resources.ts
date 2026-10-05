@@ -23,8 +23,6 @@ export const resources = {
         badge: "Browser-only BYOK",
         title: "OpenAI Image WebUI",
         subtitle: "Pure frontend BYOK image generation for OpenAI-compatible APIs.",
-        github: "GitHub",
-        clearTasks: "Clear tasks",
       },
       settings: {
         title: "API Settings",
@@ -78,12 +76,8 @@ export const resources = {
         imageCount: "Image Count",
         size: "Size (width x height)",
         sizePlaceholder: "For example: 1024x1536",
-        resolutionSlider: "Direct resolution sliders",
         widthPixels: "Width (px)",
         heightPixels: "Height (px)",
-        currentSize: "Current size: {{size}}",
-        currentRatioAuto: "Auto ratio: {{ratio}}",
-        sizeStepHint: "Slider step: {{step}}px.",
         sizeCompatibility: {
           free: "Free WxH mode: the selected size is sent as-is for OpenAI-compatible relay models.",
           openaiFixed: "OpenAI fixed-size mode: requests are automatically mapped to the closest supported size to avoid API rejection.",
@@ -91,11 +85,10 @@ export const resources = {
           geminiAspect: "Nano Banana / Gemini mode: the closest supported aspect ratio is sent as aspect_ratio and appended to the prompt as --ar for fallback; size is kept for OpenAI-compatible relays.",
         },
         commonSizes: "Compatible sizes",
-        sizeMoreOptions: "More size options",
+        customSize: "Custom size",
         commonSizesHint: "Grouped by aspect ratio. For model-specific APIs, submission may normalize to the nearest supported option.",
         recentSizes: "Recent sizes",
         recentSizesEmpty: "No recent sizes yet. Pick a preset or enter one manually.",
-        recommendedSize: "Suggested size: {{size}}",
         refImageSize: "Reference image resolution",
         refImageSizeHint: "Use this image's native resolution for pixel-perfect editing.",
 
@@ -109,7 +102,7 @@ export const resources = {
         edit: "Edit",
         inputImages: {
           title: "Input images (optional)",
-          hint: "Upload to enable edit mode. With images, requests go to /images/edits.",
+          hint: "Add a reference image to edit it — keep the original scene and change only what you describe.",
           addButton: "Add image",
           addMaskButton: "Add mask",
           mask: "Mask (optional)",
@@ -117,7 +110,6 @@ export const resources = {
           remove: "Remove",
           size: "{{width}}×{{height}}",
           editModeBadge: "Edit mode",
-          dropHere: "Drop images here",
           multipleImagesWarning:
             "The selected model may not support multiple reference images; only the first one could be honoured.",
         },
@@ -214,7 +206,6 @@ export const resources = {
         stats:
           "Pending {{pending}} · Running {{running}} · Success {{success}} · Failed {{error}}",
         total: "{{count}} total",
-        showingRecent: "Showing the latest {{shown}} tasks. {{hidden}} older tasks are hidden; generated images stay in the Image Library.",
         empty: "No tasks yet. Enter a prompt and generate your first image.",
 
         elapsed: "Elapsed: {{value}}",
@@ -235,10 +226,6 @@ export const resources = {
           inputImages: "Input images",
           detail: "Detail",
           cost: "Est. cost",
-          costUnknown: "No pricing data for this model",
-          tokens: "Tokens",
-          tokensIn: "In",
-          tokensOut: "Out",
 
         },
         status: {
@@ -288,9 +275,6 @@ export const resources = {
           visionInputsDropped:
             "Vision images were released from memory. Please re-upload to retry this analysis.",
 
-          inputImageInvalid: "Invalid input image: {{reason}}",
-          maskMismatch:
-            "Mask dimensions do not match the first image. They must be identical.",
           paramsApplied: "Parameters applied.",
           paramsAppliedInputsLost:
             "Parameters applied. Reference images are no longer available — please re-upload if needed.",
@@ -303,8 +287,6 @@ export const resources = {
         alt: "Preview",
       },
       notice: {
-        cors:
-          "If the same request works in curl/Postman but fails in browser, it is likely a CORS issue.",
       },
       errors: {
         unknown: "Unknown error.",
@@ -403,8 +385,6 @@ export const resources = {
         badge: "纯浏览器 BYOK",
         title: "OpenAI 图片 WebUI",
         subtitle: "面向 OpenAI 兼容 API 的纯前端 BYOK 图片生成工具。",
-        github: "GitHub",
-        clearTasks: "清空任务",
       },
       settings: {
         title: "API 设置",
@@ -456,12 +436,8 @@ export const resources = {
         imageCount: "图片数量",
         size: "尺寸（宽 x 高）",
         sizePlaceholder: "例如：1024x1536",
-        resolutionSlider: "直接调节分辨率",
         widthPixels: "宽度（px）",
         heightPixels: "高度（px）",
-        currentSize: "当前尺寸：{{size}}",
-        currentRatioAuto: "自动比例：{{ratio}}",
-        sizeStepHint: "滑条步进：{{step}}px。",
         sizeCompatibility: {
           free: "自由 WxH 模式：按所选尺寸直接发送，适合各种 OpenAI 兼容中转模型。",
           openaiFixed: "OpenAI 固定尺寸模式：提交时会自动映射到最接近的官方支持尺寸，避免接口拒绝。",
@@ -469,12 +445,11 @@ export const resources = {
           geminiAspect: "Nano Banana / Gemini 模式：提交时会发送最接近的 aspect_ratio，并在提示词末尾追加 --ar 保底；同时保留 size 以兼容 OpenAI 中转。",
         },
         commonSizes: "兼容尺寸",
-        sizeMoreOptions: "更多尺寸选项",
+        customSize: "自定义尺寸",
         commonSizesHint: "按比例分组；模型有固定规则时，提交会自动规范到最近的支持项。",
         recentSizes: "最近使用",
 
         recentSizesEmpty: "还没有最近使用的尺寸。你可以先点一个预设，或手动输入。",
-        recommendedSize: "建议尺寸：{{size}}",
         refImageSize: "参考图原始分辨率",
         refImageSizeHint: "使用参考图的原始分辨率，精确修图。",
         quality: {
@@ -487,7 +462,7 @@ export const resources = {
         edit: "开始编辑",
         inputImages: {
           title: "输入图片（可选）",
-          hint: "上传图片后会自动切换为编辑模式（调用 /images/edits）。",
+          hint: "添加参考图即可编辑——保留原图场景，只修改你描述的部分。",
           addButton: "添加图片",
           addMaskButton: "添加 Mask",
           mask: "Mask（可选）",
@@ -495,7 +470,6 @@ export const resources = {
           remove: "移除",
           size: "{{width}}×{{height}}",
           editModeBadge: "当前：编辑模式",
-          dropHere: "拖拽图片到此处",
           multipleImagesWarning:
             "当前模型可能不支持多参考图，实际只有第一张会被使用。",
         },
@@ -591,7 +565,6 @@ export const resources = {
 
         stats: "待处理 {{pending}} · 运行中 {{running}} · 成功 {{success}} · 失败 {{error}}",
         total: "共 {{count}} 个",
-        showingRecent: "当前只显示最近 {{shown}} 个任务，已隐藏 {{hidden}} 个更早任务；生成图片仍保留在图片库。",
         empty: "还没有任务。输入提示词并生成第一张图片。",
 
         elapsed: "耗时：{{value}}",
@@ -612,10 +585,6 @@ export const resources = {
           inputImages: "输入图片",
           detail: "细节级别",
           cost: "预估费用",
-          costUnknown: "暂无该模型的定价数据",
-          tokens: "Token 用量",
-          tokensIn: "输入",
-          tokensOut: "输出",
 
         },
         status: {
@@ -663,8 +632,6 @@ export const resources = {
           editInputsDropped: "输入图片已从内存释放，请重新上传后再重试编辑任务。",
           visionInputsDropped: "识图图片已从内存释放，请重新上传后再重试识图任务。",
 
-          inputImageInvalid: "输入图片不合法：{{reason}}",
-          maskMismatch: "Mask 尺寸与首张图不一致，两者尺寸必须完全相同。",
           paramsApplied: "参数已填入。",
           paramsAppliedInputsLost:
             "参数已填入。参考图片已失效，如需编辑模式请重新上传。",
@@ -677,7 +644,6 @@ export const resources = {
         alt: "预览",
       },
       notice: {
-        cors: "如果同一个请求在 curl/Postman 中可用但在浏览器中失败，通常是 CORS 问题。",
       },
       errors: {
         unknown: "未知错误。",
