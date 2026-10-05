@@ -38,7 +38,6 @@ export function ImageDropzone({
   children,
 }: ImageDropzoneProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const hasImages = images.length > 0;
 
   function onFileInputChange(event: ChangeEvent<HTMLInputElement>) {
     if (event.target.files && event.target.files.length > 0) {

@@ -5,7 +5,6 @@
 
 import { motion, AnimatePresence } from "motion/react";
 import { memo, useMemo } from "react";
-import { useTranslation } from "react-i18next";
 import type { ImageTask } from "../types/index";
 import { TaskCard } from "./TaskCard";
 
@@ -30,7 +29,6 @@ export const ResultGallery = memo(function ResultGallery({
   onClearTaskImage,
   onReuseParams,
 }: ResultGalleryProps) {
-  const { t } = useTranslation();
 
   // Only show most recent 20 tasks inline (memory point: recent results visible)
   const visibleTasks = useMemo(() => {

@@ -29,7 +29,6 @@ interface CompatibleRequestResult {
 }
 
 const MIN_SIZE = 256;
-const MAX_SIZE = 4096;
 const GPT_IMAGE_2_MAX_SIZE = 3840;
 const GPT_IMAGE_2_STEP = 16;
 

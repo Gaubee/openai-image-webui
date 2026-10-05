@@ -16,7 +16,7 @@ import {
   modelRequiresStrictPng,
   prepareInputImage,
 } from "../lib/imageInput";
-import { getModelSizingProfile, getRatioChipGroups, defaultSizeForGroup, ratioLabel, getSizePresetGroupsForModel } from "../lib/imageSizing";
+import { getModelSizingProfile, getRatioChipGroups, defaultSizeForGroup, getSizePresetGroupsForModel } from "../lib/imageSizing";
 import { Notice } from "./Notice";
 import { ImageDropzone } from "./ImageDropzone";
 

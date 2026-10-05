@@ -10,7 +10,6 @@
 
 import { loadSettings, loadTasks, loadBatchPrompts, STORAGE_KEYS } from './storage';
 import { setSettings, addTask, setKV } from './storageNew';
-import type { ImageTask } from '../types';
 
 const MIGRATION_FLAG_KEY = 'openai-image-webui:migrated-to-idb';
 

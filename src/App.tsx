@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Eye, Images, PenLine, Trash2 } from "lucide-react";
+import { Eye, Images, PenLine } from "lucide-react";
 import { GenerationPanel } from "./components/GenerationPanel";
 import { Header } from "./components/Header";
 import { Footer } from "./components/Footer";

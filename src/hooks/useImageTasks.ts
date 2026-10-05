@@ -19,7 +19,7 @@ import {
 import { toFriendlyError } from "../lib/errors";
 import { buildCompatibleImageRequest } from "../lib/imageSizing";
 import { estimateImageCost, estimateTokenCost, extractUsageFromRaw } from "../lib/pricing";
-import { getTasks, addTask, updateTask, deleteTask, clearTasks as clearStoredTasks } from "../lib/storageNew";
+import { getTasks, updateTask, deleteTask, clearTasks as clearStoredTasks } from "../lib/storageNew";
 import { reportStorageIssue } from "../lib/storageHealth";
 import { generateThumbnail } from "../lib/thumbnail";
 import type { AppSettings, GenerateFormState, ImageCacheStats, ImageTask, InputImageFile, VisionFormState } from "../types";
