@@ -83,3 +83,12 @@ body, .text-body {
   font-family: var(--font-mono);
   font-size: clamp(0.8125rem, 1.25vw, 0.875rem);
 }
+
+/* Utility: hide scrollbar (mobile nav) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
