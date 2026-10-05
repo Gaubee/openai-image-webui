@@ -200,9 +200,13 @@ export const TaskCard = memo(function TaskCard({ task, onPreview, onRetry, onCan
         : t("tasks.noImageYet");
 
   return (
-    <article className="rounded border border-surface-3 bg-surface-1 shadow-soft">
+    <article
+      className={`rounded border border-surface-3 bg-surface-1 shadow-soft ${
+        hasImage && !isVisionTask ? "md:grid md:grid-cols-[minmax(0,1fr)_300px]" : ""
+      }`}
+    >
       {/* Image hero (large) */}
-      <div className="flex min-h-64 items-center justify-center overflow-hidden bg-surface-2">
+      <div className="flex min-h-64 items-center justify-center overflow-hidden rounded-l bg-surface-2 md:order-1">
         {isVisionTask ? (
           task.inputThumbnail ? (
             <div className="flex h-full w-full flex-col items-center justify-center gap-2 p-4">
@@ -247,7 +251,7 @@ export const TaskCard = memo(function TaskCard({ task, onPreview, onRetry, onCan
         )}
       </div>
 
-      <div className="p-4 space-y-3">
+      <div className="flex flex-col space-y-3 p-4 md:order-2">
         {/* Status + metadata compact row */}
         <div className="flex flex-wrap items-center gap-2 text-xs text-text-tertiary">
           <span

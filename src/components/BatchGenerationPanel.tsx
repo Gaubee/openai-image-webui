@@ -238,18 +238,39 @@ export const BatchGenerationPanel = memo(function BatchGenerationPanel({
               />
             </details>
           </div>
-          <label className="block">
+          <div className="block">
             <span className="mb-1.5 block text-sm font-medium text-text-primary">{t("batch.countPerPrompt")}</span>
-            <input
-              type="number"
-              min={1}
-              max={20}
-              className="w-full rounded border border-surface-3 bg-surface-1 px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/30"
-              value={form.countPerPrompt}
-              onChange={(event) => onChange({ countPerPrompt: Number(event.target.value) })}
-            />
+            <div className="inline-flex items-center rounded border border-surface-3 bg-surface-1">
+              <button
+                type="button"
+                className="px-2.5 py-2 text-text-secondary transition-colors hover:text-text-primary disabled:cursor-not-allowed disabled:text-text-tertiary"
+                onClick={() => onChange({ countPerPrompt: Math.max(1, form.countPerPrompt - 1) })}
+                disabled={form.countPerPrompt <= 1}
+                aria-label="-"
+              >
+                −
+              </button>
+              <input
+                type="number"
+                min={1}
+                max={20}
+                className="w-12 border-x border-surface-3 bg-transparent py-2 text-center text-sm tabular-nums text-text-primary outline-none"
+                value={form.countPerPrompt}
+                onChange={(event) => onChange({ countPerPrompt: Math.min(20, Math.max(1, Number(event.target.value) || 1)) })}
+                aria-label={t("batch.countPerPrompt")}
+              />
+              <button
+                type="button"
+                className="px-2.5 py-2 text-text-secondary transition-colors hover:text-text-primary disabled:cursor-not-allowed disabled:text-text-tertiary"
+                onClick={() => onChange({ countPerPrompt: Math.min(20, form.countPerPrompt + 1) })}
+                disabled={form.countPerPrompt >= 20}
+                aria-label="+"
+              >
+                +
+              </button>
+            </div>
             <p className="mt-1 text-xs text-text-secondary">{t("batch.countPerPromptHint")}</p>
-          </label>
+          </div>
         </div>
 
         <label className="block">

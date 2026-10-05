@@ -13,7 +13,7 @@ import type { ImageCacheStats, ReuseParamsPayload } from "../types";
 import { ImageCacheSummary } from "./ImageCacheSummary";
 
 const PAGE_SIZE = 50;
-const CARD_MIN_WIDTH = 180;
+const CARD_MIN_WIDTH = 160;
 const GRID_GAP = 16;
 const VIRTUAL_ROW_HEIGHT = 500;
 const OVERSCAN_ROWS = 2;
@@ -104,16 +104,31 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
 
   const gridTopRef = useRef(0);
 
-  const updateGridTop = useCallback(() => {
-    const grid = virtualGridRef.current;
-    if (grid) {
-      gridTopRef.current = grid.getBoundingClientRect().top + window.scrollY;
-    }
+  /** The Drawer scrolls this library — fall back to the document when standalone. */
+  const resolveScrollParent = useCallback((): HTMLElement | null => {
+    return (virtualGridRef.current?.closest("aside") as HTMLElement | null) ?? null;
   }, []);
 
+  const updateGridTop = useCallback(() => {
+    const grid = virtualGridRef.current;
+    if (!grid) {
+      return;
+    }
+    const scrollParent = resolveScrollParent();
+    if (scrollParent) {
+      gridTopRef.current =
+        grid.getBoundingClientRect().top +
+        scrollParent.scrollTop -
+        scrollParent.getBoundingClientRect().top;
+    } else {
+      gridTopRef.current = grid.getBoundingClientRect().top + window.scrollY;
+    }
+  }, [resolveScrollParent]);
+
   const updateViewport = useCallback(() => {
-    const scrollTop = window.scrollY;
-    const height = window.innerHeight;
+    const scrollParent = resolveScrollParent();
+    const scrollTop = scrollParent ? scrollParent.scrollTop : window.scrollY;
+    const height = scrollParent ? scrollParent.clientHeight : window.innerHeight;
 
     if (gridTopRef.current === 0) {
       updateGridTop();
@@ -146,7 +161,7 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
       }
       return prev;
     });
-  }, [updateGridTop]);
+  }, [updateGridTop, resolveScrollParent]);
 
   const loadFirstPage = useCallback(async () => {
     setIsLoading(true);
@@ -229,10 +244,15 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
       observer.observe(virtualGridRef.current);
     }
 
+    // The library scrolls inside its Drawer (overflow-y-auto), not the window —
+    // virtualization must listen to the nearest scrollable ancestor.
+    const scrollParent =
+      (virtualGridRef.current?.closest("aside") as HTMLElement | null) ?? null;
+
     const handleScroll = () => scheduleUpdate(false);
     const handleResize = () => scheduleUpdate(true);
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
+    scrollParent?.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("resize", handleResize);
     scheduleUpdate(true);
 
@@ -242,7 +262,7 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
       }
 
       observer.disconnect();
-      window.removeEventListener("scroll", handleScroll);
+      scrollParent?.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", handleResize);
     };
   }, [updateGridTop, updateViewport]);

@@ -92,10 +92,10 @@ export function ImageDropzone({
           </div>
         ))}
 
-        {/* High-contrast add button (Gap #3 fix) */}
+        {/* Contrast fix: neutral dashed tile, amber reserved for hover only */}
         <button
           type="button"
-          className="flex h-20 w-20 items-center justify-center rounded border-2 border-dashed border-accent/50 bg-surface-1 text-xs font-medium text-accent transition-colors hover:border-accent hover:bg-accent/10"
+          className="flex h-20 w-20 items-center justify-center rounded border border-dashed border-surface-4 bg-surface-1 text-xs font-medium text-text-secondary transition-colors hover:border-accent hover:text-accent"
           onClick={() => fileInputRef.current?.click()}
         >
           + {addButtonLabel}

@@ -3,7 +3,7 @@
  * Shows connection status (dot + text, both locales), opens settings on click
  */
 
-import { Menu } from "lucide-react";
+import { Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 interface HeaderProps {
@@ -24,9 +24,7 @@ export function Header({ onOpenMenu, onOpenSettings, isConnected }: HeaderProps)
         <h1 className="text-heading font-semibold text-text-primary">
           OpenAI Image WebUI
         </h1>
-        <p className="text-detail text-text-secondary">
-          Pure frontend BYOK image generation
-        </p>
+        <p className="text-detail text-text-secondary">{t("header.subtitle")}</p>
       </div>
       <div className="flex items-center gap-2">
         <button
@@ -45,9 +43,10 @@ export function Header({ onOpenMenu, onOpenSettings, isConnected }: HeaderProps)
           type="button"
           onClick={onOpenMenu}
           className="rounded p-2 text-text-secondary transition-colors hover:bg-surface-1 hover:text-text-primary"
-          aria-label={t("header.openMenu")}
+          aria-label={t("settings.title")}
+          title={t("settings.title")}
         >
-          <Menu className="h-6 w-6" />
+          <Settings className="h-5 w-5" />
         </button>
       </div>
     </header>
