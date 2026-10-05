@@ -1,9 +1,11 @@
 /*
  * Intent: One-time migration from localStorage to IndexedDB (2026-10-05)
  * Original requirement: Preserve existing user data, no data loss
- * 
+ *
  * Flow: Detect localStorage keys → import to IDB → delete localStorage only after success
- * Physical isolation: This file is not imported by main storage module, only by App.tsx on mount
+ * Physical isolation: Legacy localStorage readers live only here; since
+ * 2026-10-06 this module runs from the main.tsx bootstrap (before first render),
+ * not from App.tsx.
  */
 
 import { loadSettings, loadTasks, loadBatchPrompts, STORAGE_KEYS } from './storage';

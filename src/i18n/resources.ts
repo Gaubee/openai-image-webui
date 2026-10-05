@@ -37,6 +37,10 @@ export const resources = {
       common: {
         close: "Close",
       },
+      headerExtras: {
+        clearTasks: "Clear all tasks",
+        clearTasksConfirm: "Delete all task history from this browser? Generated images already saved to the library are kept.",
+      },
       settings: {
         title: "API Settings",
         subtitle: "Bring your own endpoint and key.",
@@ -162,6 +166,8 @@ export const resources = {
           "Could not cache a generated image. It is still shown in this session, but will be lost after a reload. Try clearing the image cache.",
         imageCacheEvictionFailed:
           "Could not check the image cache size. Caching may be unreliable in this session.",
+        migrationFailed:
+          "Storage migration failed — your old localStorage data is untouched and will be retried next launch.",
       },
 
       workspace: {
@@ -408,6 +414,10 @@ export const resources = {
       common: {
         close: "关闭",
       },
+      headerExtras: {
+        clearTasks: "清空全部任务",
+        clearTasksConfirm: "将删除本浏览器中的全部任务历史。已保存到图片库的生成图不受影响。",
+      },
       settings: {
         title: "API 设置",
         subtitle: "填写你自己的接口地址和密钥。",
@@ -531,6 +541,7 @@ export const resources = {
           "生成的图片缓存失败。本次会话仍可查看，但刷新后会丢失。建议清理图片缓存后重试。",
         imageCacheEvictionFailed:
           "无法读取图片缓存占用大小，本次会话的缓存可能不稳定。",
+        migrationFailed: "存储迁移失败——旧数据原样保留在 localStorage 中，下次启动会自动重试。",
       },
 
       workspace: {

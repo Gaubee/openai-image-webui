@@ -1,10 +1,11 @@
 /*
  * Intent: IndexedDB storage for settings, tasks, and form state (2026-10-05)
  * Original requirement: Migrate from localStorage to IndexedDB, preserve existing user data
- * 
+ *
  * Architecture:
  * - DB: openai-image-webui (new, separate from existing imageCache DB)
- * - Stores: settings (singleton), tasks (keyPath=id, index=createdAt), kv (form drafts)
+ * - Stores: settings (singleton), tasks (keyPath "key", value-wrapped records,
+ *   index on value.createdAt), kv (form drafts) — typed via StorageSchema
  * - Migration: one-time import from localStorage, delete old keys only after successful write
  */
 

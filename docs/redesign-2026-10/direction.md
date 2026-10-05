@@ -1,7 +1,7 @@
 # Stage 1 — Discover: Direction with Genre Floor
 
-**Date**: 2026-10-05  
-**Mode**: autonomous (implementer preference)  
+**Date**: 2026-10-05
+**Mode**: autonomous (implementer preference)
 **Track**: webapp (AI image generation tool)
 
 ## T0. Genre Floor — Best-in-Class Benchmark
@@ -43,7 +43,7 @@ AI image generation tool (webapp, browser-based, BYOK model)
 
 ## T1. Direction Engine
 
-**Engine choice**: **Material × Environment**  
+**Engine choice**: **Material × Environment**
 *Brushed aluminum × dawn workshop light*
 
 **Derivation from product evidence**:
@@ -198,7 +198,7 @@ AI image generation tool (webapp, browser-based, BYOK model)
 
 ## Divergence Gate (Receipt)
 
-**Date**: 2026-10-05  
+**Date**: 2026-10-05
 **Mode**: Autonomous (single direction by design)
 
 ### Gate status: N/A (single-direction redesign)

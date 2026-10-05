@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import { shouldRunMigration, runMigration } from "./lib/storageMigration";
 import { requestPersistence } from "./lib/storageNew";
+import { reportStorageIssue } from "./lib/storageHealth";
 import "./i18n";
 import "./index.css";
 
@@ -12,6 +13,9 @@ import "./index.css";
  *   (edited source never reaches the page until the SW is unregistered).
  * - Storage migration is a bootstrap phase that completes BEFORE the first
  *   render, so every hook reads post-migration IndexedDB (no mount race).
+ *   Migration failure surfaces through storageHealth once the app mounts (the
+ *   banner reads issues reported before mount); old localStorage keys are kept
+ *   for an automatic retry next launch.
  */
 if (import.meta.env.PROD && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -27,10 +31,12 @@ async function bootstrap() {
       const result = await runMigration();
       if (!result.success) {
         console.error("[bootstrap] storage migration failed:", result.error);
+        reportStorageIssue("migrationFailed", result.error);
       }
     }
   } catch (error) {
     console.error("[bootstrap] storage migration threw:", error);
+    reportStorageIssue("migrationFailed", error);
   }
   void requestPersistence().catch(() => {});
   root.render(

@@ -7,25 +7,25 @@
   --color-surface-2: hsl(215, 16%, 18%);
   --color-surface-3: hsl(215, 14%, 24%);
   --color-surface-4: hsl(215, 12%, 30%);
-  
+
   /* Text colors */
   --color-text-primary: hsl(215, 10%, 92%);
   --color-text-secondary: hsl(215, 8%, 65%);
   --color-text-tertiary: hsl(215, 6%, 45%);
-  
+
   /* Accent: warm amber, high saturation */
   --color-accent: hsl(38, 85%, 60%);
   --color-accent-dim: hsl(38, 70%, 45%);
-  
+
   /* Semantic colors */
   --color-success: hsl(145, 60%, 50%);
   --color-error: hsl(0, 70%, 55%);
   --color-warning: hsl(38, 85%, 60%);
-  
+
   /* Typography */
   --font-sans: "Inter Variable", Inter, system-ui, -apple-system, sans-serif;
   --font-mono: "SF Mono", Menlo, Monaco, monospace;
-  
+
   /* Shadows (reserved for elevated panels, subtle) */
   --shadow-soft: 0 20px 70px -28px rgba(0, 0, 0, 0.5);
 }

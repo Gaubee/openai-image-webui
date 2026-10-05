@@ -1,6 +1,6 @@
 # Implementation Decisions Log
 
-**Date**: 2026-10-05  
+**Date**: 2026-10-05
 **Mode**: autonomous (implementer preference)
 
 ## Decision 1: Tech Stack Migration Strategy
@@ -75,7 +75,7 @@
   --color-surface-1: hsl(215, 18%, 12%);
   /* ... */
   --color-accent: hsl(38, 85%, 60%);
-  
+
   --font-sans: "Inter Variable", system-ui, sans-serif;
   --font-mono: "SF Mono", Menlo, monospace;
 }

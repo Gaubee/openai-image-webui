@@ -160,7 +160,7 @@ export function useImageTasks(settings: AppSettings) {
 
   useEffect(() => {
     tasksRef.current = tasks;
-    
+
     // Persist tasks to IndexedDB (no 500-item limit, replaces localStorage batch save)
     if (tasksLoaded) {
       tasks.forEach(task => {
@@ -811,7 +811,7 @@ export function useImageTasks(settings: AppSettings) {
     pendingInputsRef.current.delete(id);
     revokeObjectUrl(currentTask?.imageUrl);
     setTasks((current) => current.filter((task) => task.id !== id));
-    
+
     // Delete from IndexedDB
     deleteTask(id).catch(err => {
       console.error('Failed to delete task from IDB:', err);

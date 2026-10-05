@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Eye, Images, Menu, PenLine } from "lucide-react";
+import { Eye, Images, PenLine, Trash2 } from "lucide-react";
 import { GenerationPanel } from "./components/GenerationPanel";
 import { Header } from "./components/Header";
 import { Footer } from "./components/Footer";
@@ -117,7 +117,6 @@ function makeInputImageFile(file: File, width = 0, height = 0): InputImageFile {
 export default function App() {
   const { i18n, t } = useTranslation();
   const { settings, setSettings, resetSettings } = useSettings();
-  const [migrationStatus, setMigrationStatus] = useState<'checking' | 'running' | 'done' | 'error'>('checking');
   const [form, setForm] = useState<GenerateFormState>(DEFAULT_FORM);
   const [visionForm, setVisionForm] = useState<VisionFormState>(DEFAULT_VISION_FORM);
   const [batchForm, setBatchForm] = useState<BatchFormState>(DEFAULT_BATCH_FORM);
@@ -198,9 +197,14 @@ export default function App() {
 
   const closePreview = useCallback(() => setPreviewUrl(null), []);
 
-  const activeTaskCount = tasks.filter(
-    (task) => task.status === "pending" || task.status === "running",
-  ).length;
+  // "Clear tasks" is a destructive low-frequency action — ghost icon in the
+  // header with a confirm gate, disabled while there is nothing to clear.
+  const handleClearTasks = useCallback(() => {
+    if (tasks.length === 0) return;
+    if (window.confirm(t("headerExtras.clearTasksConfirm"))) {
+      clearTasks();
+    }
+  }, [clearTasks, t, tasks.length]);
 
   // Auto-dismiss toast after 3 seconds
   useEffect(() => {
@@ -545,6 +549,8 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
           onOpenMenu={() => setDrawerPanel("settings")}
           onOpenSettings={() => setDrawerPanel("settings")}
           isConnected={!!(settings.apiKey.trim() && settings.baseUrl.trim())}
+          hasTasks={tasks.length > 0}
+          onClearTasks={handleClearTasks}
         />
 
         <StorageHealthBanner />

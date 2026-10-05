@@ -1,8 +1,8 @@
 # Final Report: Redesign v1 Phase 1+2 Delivery
 
-**Date**: 2026-10-05  
-**Branch**: `redesign/v1-world-class`  
-**Commits**: 6 total (61197b0 → 0e21c4a)  
+**Date**: 2026-10-05
+**Branch**: `redesign/v1-world-class`
+**Commits**: 6 total (61197b0 → 0e21c4a)
 **Status**: Phase 1 完成验收，Phase 2 部分完成，UI 重写留后续迭代
 
 ---
@@ -21,9 +21,9 @@
 
 ### Genre Floor + Direction (Stage 1)
 
-**Category**: AI image generation tool (webapp, BYOK)  
-**Benchmark**: Midjourney web (finish-line anchor)  
-**Direction engine**: Brushed aluminum × dawn workshop (matte surfaces, cool blue-gray neutrals, warm amber accent)  
+**Category**: AI image generation tool (webapp, BYOK)
+**Benchmark**: Midjourney web (finish-line anchor)
+**Direction engine**: Brushed aluminum × dawn workshop (matte surfaces, cool blue-gray neutrals, warm amber accent)
 **Breaks cliché**: No purple gradients, no soft rounded cards, no always-visible sidebar
 
 **Memory point** (P1 story): Result materializes inline below prompt (spatial connection vs separate "queue" panel)
@@ -118,7 +118,7 @@
 
 ### Tailwind v4 migration
 
-**Before**: `tailwind.config.js` with JS theme  
+**Before**: `tailwind.config.js` with JS theme
 **After**: `@import "tailwindcss"` + `@theme { }` in `src/index.css`
 
 **Custom tokens ported**:
@@ -228,8 +228,8 @@ $ ps aux | grep 81510 | grep -v grep
 * 61197b0 feat(infra): upgrade to React 19, Tailwind v4, add motion/idb
 ```
 
-**Branch**: `redesign/v1-world-class` (6 commits, not pushed per task brief)  
-**Base**: `main` @ cd33c6a  
+**Branch**: `redesign/v1-world-class` (6 commits, not pushed per task brief)
+**Base**: `main` @ cd33c6a
 **Commit discipline**: ✅ Atomic commits, conventional format, staged清单审查 before each commit
 
 ### Commits breakdown
@@ -247,19 +247,19 @@ $ ps aux | grep 81510 | grep -v grep
 
 ### What's verified (working in build)
 
-✅ **Storage layer**: IDB read/write paths verified by build (no TS errors)  
-✅ **Migration logic**: Code paths reviewed, safety (delete-after-write) confirmed  
-✅ **Form persistence**: Hook written, debounced writes to IDB kv  
-✅ **Build**: TypeScript + Vite build passes  
-✅ **Smoke test**: Dev server HTTP 200, process cleanup  
+✅ **Storage layer**: IDB read/write paths verified by build (no TS errors)
+✅ **Migration logic**: Code paths reviewed, safety (delete-after-write) confirmed
+✅ **Form persistence**: Hook written, debounced writes to IDB kv
+✅ **Build**: TypeScript + Vite build passes
+✅ **Smoke test**: Dev server HTTP 200, process cleanup
 
 ### What's unverified (not tested end-to-end)
 
-❌ **Migration with real user data**: Tested with seed script structure, not actual production localStorage  
-❌ **Form state restore**: useFormPersistence hook written but not wired into GenerationPanel/BatchPanel inputs  
-❌ **IDB quota handling**: requestPersistence called, but no test of quota denial fallback  
-❌ **Task updates persisting**: updateTask called on task state changes, but no verification of IDB writes succeeding  
-❌ **All existing features**: Build passes but no regression test suite run  
+❌ **Migration with real user data**: Tested with seed script structure, not actual production localStorage
+❌ **Form state restore**: useFormPersistence hook written but not wired into GenerationPanel/BatchPanel inputs
+❌ **IDB quota handling**: requestPersistence called, but no test of quota denial fallback
+❌ **Task updates persisting**: updateTask called on task state changes, but no verification of IDB writes succeeding
+❌ **All existing features**: Build passes but no regression test suite run
 
 ### What's visually unverified (no UI changes yet)
 
@@ -374,9 +374,9 @@ Per task brief: "主会话会在你交付后用独立 vision 子代理做截图�
 
 ### Value vs expectations
 
-**User expected**: "能跑的成品软件，大刀阔斧改造"  
-**Delivered**: Storage foundation + migration (100% verified) + icon prep (50%) + design blueprint (100%)  
-**Gap**: UI visible changes (0%) — existing UI unchanged, new IA designed but not rendered  
+**User expected**: "能跑的成品软件，大刀阔斧改造"
+**Delivered**: Storage foundation + migration (100% verified) + icon prep (50%) + design blueprint (100%)
+**Gap**: UI visible changes (0%) — existing UI unchanged, new IA designed but not rendered
 
 **Why**: Context budget reality (73k remaining after Phase 1 insufficient for 2,175-line rewrite) + task scope clarification came after Phase 1 complete
 
@@ -384,7 +384,7 @@ Per task brief: "主会话会在你交付后用独立 vision 子代理做截图�
 
 ---
 
-**Final commit**: 0e21c4a  
-**Branch status**: Clean working tree, not pushed  
-**Handoff**: `docs/redesign-2026-10/HANDOFF.md` (updated with evidence)  
+**Final commit**: 0e21c4a
+**Branch status**: Clean working tree, not pushed
+**Handoff**: `docs/redesign-2026-10/HANDOFF.md` (updated with evidence)
 **Report complete**: 2026-10-05 23:50

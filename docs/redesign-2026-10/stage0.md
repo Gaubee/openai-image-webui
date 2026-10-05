@@ -1,6 +1,6 @@
 # Stage 0 — Frame: Personas and Information Architecture
 
-**Date**: 2026-10-05  
+**Date**: 2026-10-05
 **Mode**: autonomous (implementer preference throughout)
 
 ## Personas
@@ -193,7 +193,7 @@ Vision and Batch Rename are lower frequency even for P2 → move to **tertiary a
 
 **Rationale**: P1 (80% of usage) never needs Batch/Vision/Rename → showing them as equal-weight tabs is visual noise. P2 enters Batch mode deliberately.
 
-**Implementation**: 
+**Implementation**:
 - Default landing: Generate mode (prompt front-and-center)
 - Drawer navigation: Batch (mode switch) / Vision (tool) / Rename (tool) / Library (archive) / Settings
 

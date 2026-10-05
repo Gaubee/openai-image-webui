@@ -1,8 +1,8 @@
 # Redesign v1 Handoff Document — UPDATED 2026-10-05 23:40
 
-**Date**: 2026-10-05  
-**Branch**: `redesign/v1-world-class`  
-**Status**: Phase 1 complete, Phase 2 partially complete, handoff for remaining UI rewrite  
+**Date**: 2026-10-05
+**Branch**: `redesign/v1-world-class`
+**Status**: Phase 1 complete, Phase 2 partially complete, handoff for remaining UI rewrite
 **Latest commit**: a95e01a
 
 ---
@@ -49,7 +49,7 @@
 
 ✅ **Migration test script**: `migration-test-seed.js` (seeds localStorage, instructions for manual verification)
 
-✅ **Build**: 
+✅ **Build**:
 ```
 $ pnpm run build
 ✓ 103 modules transformed
@@ -186,10 +186,10 @@ c7cf1b0 feat(storage): integrate IndexedDB for settings and tasks
 61197b0 feat(infra): upgrade to React 19, Tailwind v4, add motion/idb
 ```
 
-**Build status**: ✅ Passing  
-**Migration status**: ✅ Wired, ready to run on first user load  
-**Form persistence**: ✅ Implemented (lastPrompt, lastSize, lastBatchPrompts → IDB kv)  
-**Icon migration**: ⚠️ Partial (imports done, button wiring pending)  
+**Build status**: ✅ Passing
+**Migration status**: ✅ Wired, ready to run on first user load
+**Form persistence**: ✅ Implemented (lastPrompt, lastSize, lastBatchPrompts → IDB kv)
+**Icon migration**: ⚠️ Partial (imports done, button wiring pending)
 **UI rewrite**: ❌ Not started (leaving to next session/main session)
 
 ---
