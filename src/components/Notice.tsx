@@ -6,12 +6,12 @@ interface NoticeProps {
 }
 
 const styles: Record<NoticeVariant, string> = {
-  info: "border-sky-200 bg-sky-50 text-sky-800",
-  warning: "border-amber-200 bg-amber-50 text-amber-800",
-  error: "border-rose-200 bg-rose-50 text-rose-800",
-  success: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  info: "border-surface-3 bg-surface-2 text-text-secondary",
+  warning: "border-accent/40 bg-accent/10 text-accent",
+  error: "border-error/40 bg-error/10 text-error",
+  success: "border-success/40 bg-success/10 text-success",
 };
 
 export function Notice({ children, variant = "info" }: NoticeProps) {
-  return <div className={`rounded-xl border px-4 py-3 text-sm ${styles[variant]}`}>{children}</div>;
+  return <div className={`rounded border px-4 py-3 text-sm ${styles[variant]}`}>{children}</div>;
 }

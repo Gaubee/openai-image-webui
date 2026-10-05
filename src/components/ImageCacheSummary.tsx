@@ -33,13 +33,13 @@ export function ImageCacheSummary({ stats, onClear }: ImageCacheSummaryProps) {
 
   return (
     <div
-      className={`rounded-2xl border px-4 py-3 text-sm ${
-        stats.overWarning ? "border-amber-200 bg-amber-50 text-amber-800" : "border-slate-200 bg-slate-50 text-slate-600"
+      className={`rounded border px-4 py-3 text-sm ${
+        stats.overWarning ? "border-accent/40 bg-accent/10 text-accent" : "border-surface-3 bg-surface-2 text-text-secondary"
       }`}
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="font-medium text-slate-800">{t("tasks.cache.title")}</div>
+        <div className="min-w-0">
+          <div className="font-medium text-text-primary">{t("tasks.cache.title")}</div>
           <div className="mt-1 text-xs">
             {t("tasks.cache.summary", {
               count: stats.count,
@@ -50,7 +50,7 @@ export function ImageCacheSummary({ stats, onClear }: ImageCacheSummaryProps) {
         </div>
         <button
           type="button"
-          className="self-start rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
+          className="shrink-0 self-start rounded border border-surface-3 bg-surface-1 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary disabled:cursor-not-allowed disabled:text-text-tertiary disabled:opacity-50"
           disabled={stats.count <= 0}
           onClick={handleClear}
         >

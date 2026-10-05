@@ -36,16 +36,16 @@ export function ImagePreviewModal({ imageUrl, onClose }: ImagePreviewModalProps)
         onClick={onClose}
         aria-label={t("preview.closePreview")}
       />
-      <div className="relative max-h-full max-w-6xl overflow-hidden rounded-3xl bg-white p-3 shadow-2xl">
+      <div className="relative max-h-full max-w-6xl overflow-hidden rounded bg-surface-1 p-3 shadow-2xl">
         <button
-          className="absolute right-4 top-4 rounded-full bg-slate-950/80 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-slate-800"
+          className="absolute right-4 top-4 rounded-full bg-surface-0/80 px-3 py-1.5 text-sm font-medium text-text-primary transition-colors hover:bg-surface-3"
           type="button"
           onClick={onClose}
         >
           {t("preview.close")}
         </button>
         <img
-          className="max-h-[85vh] max-w-full rounded-2xl object-contain"
+          className="max-h-[85vh] max-w-full rounded object-contain"
           src={imageUrl}
           alt={t("preview.alt")}
         />
