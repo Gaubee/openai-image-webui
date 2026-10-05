@@ -84,7 +84,6 @@ export const VisionPanel = memo(function VisionPanel({ form, error, visionModel,
 
       <form className="space-y-4" onSubmit={handleSubmit}>
         <ImageDropzone
-          accent="violet"
           images={form.inputImages}
           onAdd={handleAddInputImages}
           onRemove={removeInputImage}
