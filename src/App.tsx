@@ -180,6 +180,28 @@ export default function App() {
   const [activePanel, setActivePanel] = useState<WorkspacePanel>("tasks");
   const [activeMode, setActiveMode] = useState<WorkspaceMode>("generate");
 
+  // Run migration on mount and request persistent storage
+  useEffect(() => {
+    shouldRunMigration().then(shouldRun => {
+      if (!shouldRun) return;
+      
+      runMigration().then(result => {
+        if (result.success) {
+          console.log('✅ Storage migration completed successfully');
+        } else {
+          console.error('❌ Storage migration failed:', result.error);
+          setToast(t('settings.migrationFailed') || 'Storage migration failed');
+        }
+      });
+    });
+    
+    requestPersistence().then(granted => {
+      if (granted) {
+        console.log('✅ Persistent storage granted');
+      }
+    });
+  }, [t]);
+
   const {
     tasks,
     cacheStats,
