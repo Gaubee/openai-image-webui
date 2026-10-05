@@ -10,6 +10,7 @@ import type { ImageTask } from "../types/index";
 import { TaskCard } from "./TaskCard";
 
 interface ResultGalleryProps {
+  id?: string;
   tasks: ImageTask[];
   onPreview: (imageUrl: string) => void;
   onRetry: (id: string) => void;
@@ -20,6 +21,7 @@ interface ResultGalleryProps {
 }
 
 export const ResultGallery = memo(function ResultGallery({
+  id,
   tasks,
   onPreview,
   onRetry,
@@ -42,7 +44,7 @@ export const ResultGallery = memo(function ResultGallery({
   }
 
   return (
-    <div className="space-y-3">
+    <div id={id} className="space-y-3">
       <AnimatePresence mode="popLayout">
         {visibleTasks.map((task) => (
           <motion.div

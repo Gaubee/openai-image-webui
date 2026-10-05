@@ -14,6 +14,7 @@ import {
 } from "../lib/imageInput";
 import { parsePromptList, readPromptListFile } from "../lib/promptList";
 import { batchProgress, tasksOfBatch } from "../lib/batchExport";
+import { defaultSizeForGroup, getRatioChipGroups, ratioLabel } from "../lib/imageSizing";
 import { Notice } from "./Notice";
 import { ImageDropzone } from "./ImageDropzone";
 
@@ -30,7 +31,6 @@ interface BatchGenerationPanelProps {
   onExportBatch: () => void;
 }
 
-const COMMON_SIZES = ["512x512", "1024x1024", "1024x1536", "1536x1024", "1024x1792", "1792x1024"];
 const PROMPT_FILE_ACCEPT = ".txt,.md,.csv,text/plain,text/markdown,text/csv";
 
 export const BatchGenerationPanel = memo(function BatchGenerationPanel({
@@ -46,6 +46,7 @@ export const BatchGenerationPanel = memo(function BatchGenerationPanel({
   onExportBatch,
 }: BatchGenerationPanelProps) {
   const { t } = useTranslation();
+  const ratioChipGroups = useMemo(() => getRatioChipGroups(model ?? ""), [model]);
   const [inputImageError, setInputImageError] = useState("");
   const promptFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -197,31 +198,46 @@ export const BatchGenerationPanel = memo(function BatchGenerationPanel({
 
         {/* Size + count + advanced */}
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-text-primary">{t("batch.size")}</span>
-            <input
-              className="w-full rounded border border-surface-3 bg-surface-1 px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/30"
-              value={form.size}
-              placeholder="1024x1024"
-              onChange={(event) => onChange({ size: event.target.value })}
-            />
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {COMMON_SIZES.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  className={`rounded-full border px-2 py-0.5 text-[11px] transition-colors ${
-                    form.size.trim() === s
-                      ? "border-accent bg-accent text-surface-0"
-                      : "border-surface-3 bg-surface-2 text-text-secondary hover:bg-surface-3"
-                  }`}
-                  onClick={() => onChange({ size: s })}
-                >
-                  {s}
-                </button>
-              ))}
+          <div className="block">
+            <div className="mb-1.5 flex items-baseline justify-between gap-3">
+              <span className="text-sm font-medium text-text-primary">{t("batch.size")}</span>
+              <span className="text-xs tabular-nums text-text-tertiary">
+                {form.size.trim() || "1024x1024"} · {ratioLabel(form.size) || "1:1"}
+              </span>
             </div>
-          </label>
+            <div className="flex flex-wrap gap-1.5">
+              {ratioChipGroups.map((group) => {
+                const active = ratioLabel(form.size) === group.ratio;
+                return (
+                  <button
+                    key={group.ratio}
+                    type="button"
+                    className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                      active
+                        ? "border-accent bg-accent/10 text-accent"
+                        : "border-surface-3 bg-surface-1 text-text-secondary hover:bg-surface-2 hover:text-text-primary"
+                    }`}
+                    onClick={() => onChange({ size: defaultSizeForGroup(group) })}
+                    title={group.sizes.join(" · ")}
+                  >
+                    {group.ratio}
+                  </button>
+                );
+              })}
+            </div>
+            <details className="group mt-1.5 rounded border border-surface-3 bg-surface-2 p-2.5 outline-none [&_summary::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer select-none list-none items-center justify-between text-xs font-medium text-text-secondary focus:outline-none">
+                <span>{t("generation.customSize")}</span>
+                <span className="text-[10px] text-text-tertiary transition-transform group-open:rotate-180">▼</span>
+              </summary>
+              <input
+                className="mt-2 w-full rounded border border-surface-3 bg-surface-1 px-3 py-2 text-xs tabular-nums text-text-primary outline-none transition-colors placeholder:text-text-tertiary focus:border-accent"
+                value={form.size}
+                placeholder="1024x1024"
+                onChange={(event) => onChange({ size: event.target.value })}
+              />
+            </details>
+          </div>
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-text-primary">{t("batch.countPerPrompt")}</span>
             <input

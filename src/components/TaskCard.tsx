@@ -5,7 +5,7 @@
 
 import { memo, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Download, MoreVertical } from "lucide-react";
+import { Download, Maximize2, MoreVertical } from "lucide-react";
 import { copyText, downloadImage, downloadText } from "../lib/download";
 import { formatCostUsd } from "../lib/pricing";
 
@@ -227,16 +227,20 @@ export const TaskCard = memo(function TaskCard({ task, onPreview, onRetry, onCan
         ) : task.imageUrl ? (
           <button
             type="button"
-            className="h-full w-full"
+            className="group relative h-full w-full"
             onClick={() => onPreview(task.imageUrl as string)}
             aria-label={t("tasks.previewGeneratedImage")}
           >
             <img
-              className="h-full max-h-96 w-full object-contain"
+              className="h-full max-h-[60vh] w-full object-contain"
               src={task.imageUrl}
               alt={task.prompt}
               loading="lazy"
             />
+            <span className="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded bg-surface-0/80 px-2.5 py-1.5 text-xs font-medium text-text-primary opacity-0 transition-opacity group-hover:opacity-100">
+              <Maximize2 className="h-3.5 w-3.5" />
+              {t("tasks.previewGeneratedImage")}
+            </span>
           </button>
         ) : (
           <div className="px-6 text-center text-sm text-text-tertiary">{placeholderText}</div>
@@ -252,7 +256,7 @@ export const TaskCard = memo(function TaskCard({ task, onPreview, onRetry, onCan
             {t(`tasks.status.${task.status}`)}
           </span>
           <span>
-            {task.model} · {isVisionTask ? `${task.inputImageCount ?? 0} img` : task.size} · {task.responseFormat}
+            {task.model} · {isVisionTask ? `${task.inputImageCount ?? 0} img` : task.size}
           </span>
           {task.imageCached && (
             <span className="rounded-full bg-surface-2 px-2.5 py-1 font-medium">

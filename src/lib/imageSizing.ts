@@ -488,3 +488,44 @@ export function stripGeminiSizeArtifacts(
   }
   return { prompt: cleanedPrompt, extraParams: touched ? cleaned : extraParams };
 }
+
+/*
+ * Intent: shared ratio-chip model for size pickers (2026-10-06 R3)
+ * Original requirement: single size-selection paradigm across Generate and
+ * Batch panels — one-tap ratio chips, precise px input demoted to a collapse.
+ */
+
+/** Ratios surfaced as one-tap chips; every other ratio lives in "Custom size". */
+export const RATIO_CHIP_WHITELIST = ["1:1", "3:2", "2:3", "4:3", "3:4", "16:9", "9:16"];
+
+/** Chip groups for a model: whitelisted common ratios, or the first groups when a model only supports exotic ones. */
+export function getRatioChipGroups(model: string): SizePresetGroup[] {
+  const groups = getSizePresetGroupsForModel(model);
+  const filtered = groups.filter((group) => RATIO_CHIP_WHITELIST.includes(group.ratio));
+  return filtered.length > 0 ? filtered : groups.slice(0, 7);
+}
+
+/** The group's preset closest to ~1MP — the least surprising chip default. */
+export function defaultSizeForGroup(group: SizePresetGroup, referenceArea = 1024 * 1024): string {
+  let best = group.sizes[0] ?? "1024x1024";
+  let bestDelta = Number.POSITIVE_INFINITY;
+  for (const size of group.sizes) {
+    const [w, h] = size.split("x").map(Number);
+    if (!Number.isFinite(w) || !Number.isFinite(h)) continue;
+    const delta = Math.abs(w * h - referenceArea);
+    if (delta < bestDelta) {
+      bestDelta = delta;
+      best = size;
+    }
+  }
+  return best;
+}
+
+/** Reduced ratio label for a "WxH" string, e.g. "1024x768" -> "4:3". */
+export function ratioLabel(size: string): string {
+  const [w, h] = size.toLowerCase().replace(/×/g, "x").split("x").map(Number);
+  if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return "";
+  const gcd = (a: number, b: number): number => (b === 0 ? a || 1 : gcd(b, a % b));
+  const d = gcd(w, h);
+  return `${Math.round(w / d)}:${Math.round(h / d)}`;
+}

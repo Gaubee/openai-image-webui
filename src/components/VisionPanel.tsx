@@ -141,7 +141,7 @@ export const VisionPanel = memo(function VisionPanel({ form, error, visionModel,
         {error ? <Notice variant="error">{error}</Notice> : null}
 
         <button
-          className="inline-flex w-full items-center justify-center rounded bg-accent px-5 py-3 text-sm font-semibold text-surface-0 shadow-sm transition-colors hover:bg-accent-dim disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-text-tertiary"
+          className="inline-flex w-full items-center justify-center rounded bg-accent px-5 py-3 text-sm font-semibold text-surface-0 shadow-sm transition-colors hover:bg-accent-dim disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-text-tertiary disabled:shadow-none"
           type="submit"
           disabled={form.inputImages.length === 0}
         >

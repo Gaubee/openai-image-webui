@@ -23,6 +23,11 @@ export const resources = {
         badge: "Browser-only BYOK",
         title: "OpenAI Image WebUI",
         subtitle: "Pure frontend BYOK image generation for OpenAI-compatible APIs.",
+        openMenu: "Open menu",
+        status: {
+          connected: "Connected",
+          notConnected: "Not connected",
+        },
       },
       settings: {
         title: "API Settings",
@@ -171,7 +176,7 @@ export const resources = {
       },
       library: {
         title: "Image Library",
-        subtitle: "Browse generated images from browser storage without stretching the task queue.",
+        subtitle: "Every image you generate is saved locally — browse, download, or reuse it anytime.",
         loading: "Loading...",
         empty: "No cached images yet. Generated images will appear here after caching.",
         loadMore: "Load more",
@@ -531,7 +536,7 @@ export const resources = {
       },
       library: {
         title: "图片库",
-        subtitle: "从浏览器本地存储浏览历史生成图，不再把任务队列无限拉长。",
+        subtitle: "你生成的每一张图都保存在本地浏览器中，可随时浏览、下载或复用。",
         loading: "加载中...",
         empty: "还没有缓存图片。生成成功并缓存后会显示在这里。",
         loadMore: "加载更多",

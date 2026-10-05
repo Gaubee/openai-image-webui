@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, memo, type ChangeEvent, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Minus, Plus } from "lucide-react";
 import type { GenerateFormState, InputImageFile } from "../types";
 import {
   assertMaskMatchesImage,
@@ -9,7 +9,7 @@ import {
   modelRequiresStrictPng,
   prepareInputImage,
 } from "../lib/imageInput";
-import { getModelSizingProfile, getSizePresetGroupsForModel, type SizePresetGroup } from "../lib/imageSizing";
+import { getModelSizingProfile, getRatioChipGroups, defaultSizeForGroup, ratioLabel, getSizePresetGroupsForModel } from "../lib/imageSizing";
 import { Notice } from "./Notice";
 import { ImageDropzone } from "./ImageDropzone";
 
@@ -19,26 +19,6 @@ const MAX_SIZE = 4096;
 const DEFAULT_SIZE = 1024;
 const RECENT_SIZE_LIMIT = 6;
 const RECENT_SIZE_STORAGE_KEY = "openai-image-webui:recent-sizes";
-
-/** Ratios surfaced as one-tap chips; every other ratio lives in "Custom size". */
-const RATIO_CHIP_WHITELIST = ["1:1", "3:2", "2:3", "4:3", "3:4", "16:9", "9:16"];
-const REFERENCE_AREA = DEFAULT_SIZE * DEFAULT_SIZE;
-
-/** The group's preset closest to ~1MP — the least surprising default. */
-function pickDefaultSize(group: SizePresetGroup) {
-  let best = group.sizes[0] ?? `${DEFAULT_SIZE}x${DEFAULT_SIZE}`;
-  let bestDelta = Number.POSITIVE_INFINITY;
-  for (const size of group.sizes) {
-    const parsed = parseSize(size);
-    if (!parsed) continue;
-    const delta = Math.abs(parsed.width * parsed.height - REFERENCE_AREA);
-    if (delta < bestDelta) {
-      bestDelta = delta;
-      best = size;
-    }
-  }
-  return best;
-}
 
 
 
@@ -165,12 +145,7 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
   const isEditMode = form.inputImages.length > 0;
   const modelSizingProfile = useMemo(() => getModelSizingProfile(model ?? ""), [model]);
   const sizePresetGroups = useMemo(() => getSizePresetGroupsForModel(model ?? ""), [model]);
-  // One-tap ratio chips: whitelisted common ratios; falls back to the first
-  // groups when a model only supports exotic ones.
-  const ratioChipGroups = useMemo(() => {
-    const filtered = sizePresetGroups.filter((group) => RATIO_CHIP_WHITELIST.includes(group.ratio));
-    return filtered.length > 0 ? filtered : sizePresetGroups.slice(0, 7);
-  }, [sizePresetGroups]);
+  const ratioChipGroups = useMemo(() => getRatioChipGroups(model ?? ""), [model]);
   // gpt-image-2: 16px alignment required; gemini: free input (only aspect_ratio matters); others: 64px slider step (cosmetic)
   const sliderStep = modelSizingProfile.mode === "gptImage2" ? 16 : modelSizingProfile.mode === "geminiAspect" ? 8 : SIZE_STEP;
 
@@ -317,19 +292,14 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
     form.inputImages.length > 1 && !!model && !supportsMultiImage;
 
   return (
-    <section className="rounded border border-surface-3 bg-surface-1 p-5 shadow-soft">
-      <div className="mb-5">
-        <h2 className="text-lg font-semibold text-text-primary">{t("generation.title")}</h2>
-        <p className="mt-1 text-sm text-text-secondary">{t("generation.subtitle")}</p>
-      </div>
-
-      <form className="space-y-4" onSubmit={handleSubmit}>
+    <section className="rounded border border-surface-3 bg-surface-1 p-4 shadow-soft">
+      <form className="space-y-3.5" onSubmit={handleSubmit}>
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-text-secondary">
             {t("generation.prompt")}
           </span>
           <textarea
-            className="min-h-32 w-full resize-y rounded border border-surface-3 bg-surface-2 px-3 py-2.5 text-sm text-text-primary outline-none transition-colors placeholder:text-text-tertiary focus:border-accent"
+            className="min-h-24 w-full resize-y rounded border border-surface-3 bg-surface-2 px-3 py-2.5 text-sm text-text-primary outline-none transition-colors placeholder:text-text-tertiary focus:border-accent"
             placeholder={t("generation.promptPlaceholder")}
             value={form.prompt}
             onChange={(event) => onChange({ prompt: event.target.value })}
@@ -396,20 +366,39 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
           ) : null}
         </ImageDropzone>
 
-        {/* Image count */}
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-text-secondary">
-            {t("generation.imageCount")}
-          </span>
-          <input
-            className="w-full rounded border border-surface-3 bg-surface-2 px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-accent"
-            type="number"
-            min={1}
-            max={20}
-            value={form.count}
-            onChange={(event) => onChange({ count: Number(event.target.value) })}
-          />
-        </label>
+        {/* Image count — compact stepper (value domain is tiny: 1-20) */}
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-text-secondary">{t("generation.imageCount")}</span>
+          <div className="inline-flex items-center rounded border border-surface-3 bg-surface-2">
+            <button
+              type="button"
+              className="px-2.5 py-1.5 text-text-secondary transition-colors hover:text-text-primary disabled:cursor-not-allowed disabled:text-text-tertiary"
+              onClick={() => onChange({ count: Math.max(1, form.count - 1) })}
+              disabled={form.count <= 1}
+              aria-label="-"
+            >
+              <Minus className="h-3.5 w-3.5" />
+            </button>
+            <input
+              className="w-12 border-x border-surface-3 bg-transparent py-1.5 text-center text-sm tabular-nums text-text-primary outline-none"
+              type="number"
+              min={1}
+              max={20}
+              value={form.count}
+              onChange={(event) => onChange({ count: Math.min(20, Math.max(1, Number(event.target.value) || 1)) })}
+              aria-label={t("generation.imageCount")}
+            />
+            <button
+              type="button"
+              className="px-2.5 py-1.5 text-text-secondary transition-colors hover:text-text-primary disabled:cursor-not-allowed disabled:text-text-tertiary"
+              onClick={() => onChange({ count: Math.min(20, form.count + 1) })}
+              disabled={form.count >= 20}
+              aria-label="+"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
 
         {/* --- Size section: ratio presets first, precise controls collapsed --- */}
         <div className="space-y-2.5">
@@ -433,7 +422,7 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
                       ? "border-accent bg-accent/10 text-accent"
                       : "border-surface-3 bg-surface-1 text-text-secondary hover:bg-surface-2 hover:text-text-primary"
                   }`}
-                  onClick={() => applySize(pickDefaultSize(group))}
+                  onClick={() => applySize(defaultSizeForGroup(group))}
                   title={group.sizes.join(" · ")}
                 >
                   {group.ratio}

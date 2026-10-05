@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Menu } from "lucide-react";
+import { Eye, Images, Menu, PenLine } from "lucide-react";
 import { GenerationPanel } from "./components/GenerationPanel";
 import { Header } from "./components/Header";
 import { Footer } from "./components/Footer";
@@ -440,6 +440,11 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
         mustBeObject: t("errors.advancedJsonObject"),
       });
       addTasks(normalizedForm, extraParams);
+      // Bring the materializing result into view — the payoff moment should
+      // not require hunting for it below the fold.
+      requestAnimationFrame(() => {
+        document.getElementById("result-gallery")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
       // Keep inputImages/maskImage in the form — user may want to tweak the
       // prompt and re-submit. Revoking their object URLs here would break
       // the in-flight task's preview data too. They get cleared when the
@@ -564,51 +569,42 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
 
         <StorageHealthBanner />
 
-        {/* Mode switcher */}
-        <nav className="mb-6 flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
-          <button
-            type="button"
-            onClick={() => setActiveMode("generate")}
-            className={`whitespace-nowrap rounded px-4 py-2 text-sm font-medium transition ${
-              activeMode === "generate"
-                ? "bg-accent text-surface-0 shadow-sm"
-                : "bg-surface-1 text-text-secondary hover:bg-surface-2 hover:text-text-primary"
-            }`}
-          >
-            {t("workspace.modes.generate")}
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveMode("batch")}
-            className={`whitespace-nowrap rounded px-4 py-2 text-sm font-medium transition ${
-              activeMode === "batch"
-                ? "bg-accent text-surface-0 shadow-sm"
-                : "bg-surface-1 text-text-secondary hover:bg-surface-2 hover:text-text-primary"
-            }`}
-          >
-            {t("workspace.modes.batch")}
-          </button>
-          <button
-            type="button"
-            onClick={() => setDrawerPanel("vision")}
-            className="ml-auto whitespace-nowrap rounded border border-surface-3 bg-surface-1 px-4 py-2 text-sm font-medium text-text-secondary transition hover:bg-surface-2 hover:text-text-primary"
-          >
-            {t("workspace.modes.vision")}
-          </button>
-          <button
-            type="button"
-            onClick={() => setDrawerPanel("rename")}
-            className="whitespace-nowrap rounded border border-surface-3 bg-surface-1 px-4 py-2 text-sm font-medium text-text-secondary transition hover:bg-surface-2 hover:text-text-primary"
-          >
-            {t("workspace.modes.rename")}
-          </button>
-          <button
-            type="button"
-            onClick={() => setDrawerPanel("library")}
-            className="whitespace-nowrap rounded border border-surface-3 bg-surface-1 px-4 py-2 text-sm font-medium text-text-secondary transition hover:bg-surface-2 hover:text-text-primary"
-          >
-            {t("library.title")}
-          </button>
+        {/* Mode switcher (segmented) + tool entries (ghost) — two distinct tiers */}
+        <nav className="mb-5 flex flex-wrap items-center gap-2">
+          <div className="flex rounded border border-surface-3 bg-surface-1 p-0.5" role="group" aria-label={t("workspace.modes.generate")}>
+            {(["generate", "batch"] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setActiveMode(mode)}
+                aria-pressed={activeMode === mode}
+                className={`whitespace-nowrap rounded px-4 py-1.5 text-sm font-medium transition-colors ${
+                  activeMode === mode
+                    ? "bg-accent text-surface-0"
+                    : "text-text-secondary hover:text-text-primary"
+                }`}
+              >
+                {t(`workspace.modes.${mode}`)}
+              </button>
+            ))}
+          </div>
+          <div className="ml-auto flex flex-wrap items-center gap-0.5">
+            {([
+              { key: "vision", panel: "vision", icon: Eye },
+              { key: "rename", panel: "rename", icon: PenLine },
+              { key: "library", panel: "library", icon: Images },
+            ] as const).map(({ key, panel, icon: Icon }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setDrawerPanel(panel)}
+                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded px-2.5 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-1 hover:text-text-primary"
+              >
+                <Icon className="h-4 w-4" />
+                {key === "library" ? t("library.title") : t(`workspace.modes.${key}`)}
+              </button>
+            ))}
+          </div>
         </nav>
 
         {/* Main canvas */}
@@ -623,6 +619,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
                 onSubmit={handleGenerate}
               />
               <ResultGallery
+                id="result-gallery"
                 tasks={tasks}
                 onPreview={setPreviewUrl}
                 onRetry={retryTask}

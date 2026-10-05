@@ -13,7 +13,7 @@ import type { ImageCacheStats, ReuseParamsPayload } from "../types";
 import { ImageCacheSummary } from "./ImageCacheSummary";
 
 const PAGE_SIZE = 50;
-const CARD_MIN_WIDTH = 240;
+const CARD_MIN_WIDTH = 180;
 const GRID_GAP = 16;
 const VIRTUAL_ROW_HEIGHT = 500;
 const OVERSCAN_ROWS = 2;
@@ -597,9 +597,6 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
         <div className="min-w-0 flex-1">
           <p className="text-sm text-text-secondary">{t("library.subtitle")}</p>
         </div>
-        <div className="shrink-0 rounded-full bg-surface-2 px-3 py-1 text-xs font-medium text-text-tertiary">
-          {t("tasks.cache.summary", { count: stats.count, size: formatBytes(stats.size) })}
-        </div>
       </div>
 
       <div className="mb-5">
@@ -848,7 +845,7 @@ const ImageCard = memo(function ImageCard({
           </button>
           <button
             type="button"
-            className="rounded border border-surface-3 bg-surface-1 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
+            className="rounded bg-accent px-3 py-1.5 text-xs font-medium text-surface-0 transition-colors hover:bg-accent-dim"
             onClick={() => void onDownload(item)}
             tabIndex={selectionMode ? -1 : 0}
           >
@@ -865,7 +862,7 @@ const ImageCard = memo(function ImageCard({
           </button>
           <button
             type="button"
-            className="rounded border border-accent bg-accent px-3 py-1.5 text-xs font-medium text-surface-0 transition-colors hover:bg-accent-dim"
+            className="rounded border border-surface-3 bg-surface-1 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
             onClick={() => onReuse(item)}
             tabIndex={selectionMode ? -1 : 0}
           >
