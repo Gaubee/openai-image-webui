@@ -123,33 +123,15 @@ export default function App() {
   const [formError, setFormError] = useState("");
   const [visionError, setVisionError] = useState("");
   const [batchError, setBatchError] = useState("");
-  const [currentBatchId, setCurrentBatchId] = useState<string | null>(() => {
-    try {
-      return localStorage.getItem("openai-image-webui:current-batch-id");
-    } catch {
-      return null;
-    }
-  });
+  const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
   const [isExportingBatch, setIsExportingBatch] = useState(false);
-
-  useEffect(() => {
-    try {
-      if (currentBatchId) {
-        localStorage.setItem("openai-image-webui:current-batch-id", currentBatchId);
-      } else {
-        localStorage.removeItem("openai-image-webui:current-batch-id");
-      }
-    } catch {
-      // Ignore localStorage failures.
-    }
-  }, [currentBatchId]);
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [activeMode, setActiveMode] = useState<AppMode>("generate");
   const [drawerPanel, setDrawerPanel] = useState<DrawerPanel>(null);
 
-  // Form drafts (prompt/size/advancedJson) persist to IDB kv. The ref keeps
-  // the setters callable from memo-stable callbacks without re-creating them.
+  // Form drafts (prompt/size/advancedJson/batch state) persist to IDB kv. The
+  // ref keeps the setters callable from memo-stable callbacks.
   const formPersistence = useFormPersistence();
   const formPersistenceRef = useRef(formPersistence);
   formPersistenceRef.current = formPersistence;
@@ -159,7 +141,8 @@ export default function App() {
   // kv store (migrated from localStorage by storageMigration).
   useEffect(() => {
     if (!formPersistence.loaded) return;
-    const { lastPrompt, lastSize, lastAdvancedJson, lastBatchPrompts } = formPersistenceRef.current.draft;
+    const { lastPrompt, lastSize, lastAdvancedJson, lastBatchPrompts, currentBatchId: draftBatchId } =
+      formPersistenceRef.current.draft;
     setForm((current) => ({
       ...current,
       prompt: current.prompt || lastPrompt || "",
@@ -169,12 +152,19 @@ export default function App() {
     if (lastBatchPrompts !== undefined) {
       setBatchForm((current) => ({ ...current, promptsText: current.promptsText || lastBatchPrompts }));
     }
+    if (draftBatchId !== undefined) {
+      setCurrentBatchId((current) => current ?? draftBatchId);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot seed on load
   }, [formPersistence.loaded]);
 
-  // Run migration on mount and request persistent storage
-  // NOTE: storage migration itself runs in main.tsx bootstrap BEFORE this
-  // component renders — hooks below therefore always read post-migration IDB.
+  // Keep the batch id in the kv draft store (survives reloads without
+  // localStorage; storageMigration seeds it from the legacy key).
+  useEffect(() => {
+    if (currentBatchId) {
+      formPersistenceRef.current.setCurrentBatchId(currentBatchId);
+    }
+  }, [currentBatchId]);
 
   const {
     tasks,

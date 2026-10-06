@@ -11,6 +11,7 @@ interface FormDraft {
   lastSize?: string;
   lastAdvancedJson?: string;
   lastBatchPrompts?: string;
+  currentBatchId?: string;
 }
 
 const DEBOUNCE_MS = 500;
@@ -26,12 +27,14 @@ export function useFormPersistence() {
       getKV('lastSize'),
       getKV('lastAdvancedJson'),
       getKV('lastBatchPrompts'),
-    ]).then(([prompt, size, json, batchPrompts]) => {
+      getKV('currentBatchId'),
+    ]).then(([prompt, size, json, batchPrompts, currentBatchId]) => {
       setDraft({
         lastPrompt: typeof prompt === 'string' ? prompt : undefined,
         lastSize: typeof size === 'string' ? size : undefined,
         lastAdvancedJson: typeof json === 'string' ? json : undefined,
         lastBatchPrompts: typeof batchPrompts === 'string' ? batchPrompts : undefined,
+        currentBatchId: typeof currentBatchId === 'string' ? currentBatchId : undefined,
       });
       setLoaded(true);
     }).catch(() => {
@@ -56,6 +59,9 @@ export function useFormPersistence() {
       if (draft.lastBatchPrompts !== undefined) {
         setKV('lastBatchPrompts', draft.lastBatchPrompts).catch(console.error);
       }
+      if (draft.currentBatchId !== undefined) {
+        setKV('currentBatchId', draft.currentBatchId).catch(console.error);
+      }
     }, DEBOUNCE_MS);
 
     return () => clearTimeout(timer);
@@ -67,6 +73,7 @@ export function useFormPersistence() {
     setSize: (value: string) => setDraft(d => ({ ...d, lastSize: value })),
     setAdvancedJson: (value: string) => setDraft(d => ({ ...d, lastAdvancedJson: value })),
     setBatchPrompts: (value: string) => setDraft(d => ({ ...d, lastBatchPrompts: value })),
+    setCurrentBatchId: (value: string) => setDraft(d => ({ ...d, currentBatchId: value })),
     loaded,
   };
 }

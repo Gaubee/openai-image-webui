@@ -6,6 +6,9 @@ export const STORAGE_KEYS = {
   settings: "openai-image-webui:settings",
   tasks: "openai-image-webui:tasks",
   batchPrompts: "openai-image-webui:batch-prompts",
+  // Legacy (main branch): the only consumer left is storageMigration. The
+  // current app keeps this value in the IDB kv store under "currentBatchId".
+  currentBatchId: "openai-image-webui:current-batch-id",
 } as const;
 
 const PERSISTED_TASKS_LIMIT = 500;

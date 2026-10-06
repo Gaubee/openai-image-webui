@@ -19,12 +19,14 @@ export async function shouldRunMigration(): Promise<boolean> {
     return false;
   }
 
-  // Check if any old data exists
+  // Check if any old data exists (currentBatchId alone is worth migrating —
+  // it restores the user's in-flight batch after the upgrade)
   const hasSettings = localStorage.getItem(STORAGE_KEYS.settings) !== null;
   const hasTasks = localStorage.getItem(STORAGE_KEYS.tasks) !== null;
   const hasBatchPrompts = localStorage.getItem(STORAGE_KEYS.batchPrompts) !== null;
+  const hasCurrentBatchId = localStorage.getItem(STORAGE_KEYS.currentBatchId) !== null;
 
-  return hasSettings || hasTasks || hasBatchPrompts;
+  return hasSettings || hasTasks || hasBatchPrompts || hasCurrentBatchId;
 }
 
 export async function runMigration(): Promise<{ success: boolean; error?: string }> {
@@ -33,6 +35,7 @@ export async function runMigration(): Promise<{ success: boolean; error?: string
     const settings = loadSettings();
     const tasks = loadTasks();
     const batchPrompts = loadBatchPrompts();
+    const currentBatchId = localStorage.getItem(STORAGE_KEYS.currentBatchId) ?? undefined;
 
     // Import to IndexedDB
     await setSettings(settings);
@@ -44,11 +47,15 @@ export async function runMigration(): Promise<{ success: boolean; error?: string
     if (batchPrompts) {
       await setKV('lastBatchPrompts', batchPrompts);
     }
+    if (currentBatchId) {
+      await setKV('currentBatchId', currentBatchId);
+    }
 
     // Only delete localStorage after successful IDB write
     localStorage.removeItem(STORAGE_KEYS.settings);
     localStorage.removeItem(STORAGE_KEYS.tasks);
     localStorage.removeItem(STORAGE_KEYS.batchPrompts);
+    localStorage.removeItem(STORAGE_KEYS.currentBatchId);
 
     // Mark migration complete
     localStorage.setItem(MIGRATION_FLAG_KEY, 'true');
