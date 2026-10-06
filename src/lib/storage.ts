@@ -35,7 +35,7 @@ export const DEFAULT_VISION_PROMPT_KEY = "vision.defaultPrompt";
 export const DEFAULT_SETTINGS: AppSettings = {
   apiKey: "",
   baseUrl: "",
-  model: import.meta.env.VITE_DEFAULT_MODEL || "gpt-image-1",
+  model: import.meta.env.VITE_DEFAULT_MODEL || "gpt-image-2.5",
   visionModel: import.meta.env.VITE_DEFAULT_VISION_MODEL || "gpt-4.1-mini",
   responseFormat: "url",
   concurrency: 3,

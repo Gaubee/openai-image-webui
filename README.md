@@ -34,7 +34,7 @@ Bring your own API key and endpoint.
 ## Quick Start
 
 ```bash
-git clone https://github.com/tobenot/openai-image-webui.git
+git clone https://github.com/gaubee/openai-image-webui.git
 cd openai-image-webui
 npm install
 npm run dev
@@ -100,7 +100,7 @@ Example generation request body:
 
 ```json
 {
-  "model": "gpt-image-1",
+  "model": "gpt-image-2.5",
   "prompt": "A cute cat wearing sunglasses",
   "n": 1,
   "size": "1024x1024",

@@ -302,7 +302,7 @@ export const SettingsPanel = memo(function SettingsPanel({ settings, onChange, o
           <input
             list={datalistId}
             className="w-full rounded border border-surface-3 bg-surface-1 px-3 py-2.5 text-sm text-text-primary outline-none transition-colors placeholder:text-text-tertiary focus:border-accent focus:ring-2 focus:ring-accent/30"
-            placeholder="gpt-image-1 or gpt-4o-image"
+            placeholder="gpt-image-2.5 or gpt-image-1"
             value={settings.model}
             onChange={(event) => onChange({ model: event.target.value })}
           />
