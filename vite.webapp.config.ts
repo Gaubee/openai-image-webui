@@ -5,14 +5,15 @@ import react from "@vitejs/plugin-react";
  * Intent: vite config for OUR webapp UI (2026-10-06 dual-UI split)
  * Upstream-original UI keeps the repo root (index.html + src/); this config
  * serves webapp/ as its own root so the webapp UI lives at "/" of its own
- * server/port. No publicDir: the upstream PWA service worker must not cache
- * the webapp.
+ * server/port. publicDir points at webapp/public (its own manifest + icons) —
+ * never the repo-root public/, whose PWA service worker must not reach the
+ * webapp origin.
  */
 export default defineConfig({
   root: "webapp",
   base: "/",
   plugins: [react()],
-  publicDir: false,
+  publicDir: "public",
   // Both dev servers run from the same repo — keep their dep-optimizer
   // caches separate or they corrupt each other's pre-bundles on startup.
   cacheDir: "node_modules/.vite-webapp",
