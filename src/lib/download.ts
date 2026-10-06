@@ -23,18 +23,18 @@ function clickDownload(url: string, filename: string) {
 }
 
 export async function downloadImage(imageUrl: string, filenameBase: string, mimeType?: string) {
-  if (imageUrl.startsWith("data:")) {
-    clickDownload(imageUrl, `${filenameBase}.${getFileExtension(imageUrl, mimeType)}`);
-    return;
-  }
-
+  // Always convert to a blob: object URL first — data: URLs (b64_json results)
+  // and cross-origin images can fall back to navigation instead of saving when
+  // clicked directly. Revoke late so the download has time to start.
   try {
     const res = await fetch(imageUrl);
     const blob = await res.blob();
     const objectUrl = URL.createObjectURL(blob);
     clickDownload(objectUrl, `${filenameBase}.${getFileExtension(imageUrl, blob.type || mimeType)}`);
-    URL.revokeObjectURL(objectUrl);
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000);
+    return;
   } catch {
+    // CORS-blocked remote image: last resort, click the raw URL
     clickDownload(imageUrl, `${filenameBase}.${getFileExtension(imageUrl, mimeType)}`);
   }
 }
@@ -43,7 +43,7 @@ export function downloadText(text: string, filenameBase: string) {
   const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
   const objectUrl = URL.createObjectURL(blob);
   clickDownload(objectUrl, `${filenameBase}.txt`);
-  URL.revokeObjectURL(objectUrl);
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000);
 }
 
 export async function copyText(text: string) {

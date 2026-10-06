@@ -13,7 +13,7 @@ import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { AppSettings, ImageTask } from '../types';
 
 const DB_NAME = 'openai-image-webui';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 /** Known kv keys — extends as new form drafts / state entries are added. */
 type KVKey = 'lastPrompt' | 'lastSize' | 'lastAdvancedJson' | 'lastBatchPrompts' | 'currentBatchId';
@@ -47,6 +47,12 @@ interface StorageSchema extends DBSchema {
     key: KVKey;
     value: { key: KVKey; value: KVValueMap[KVKey] };
   };
+  // Original input images per task (vision/edit), stored as Blobs — the task
+  // record itself only carries a small preview thumbnail.
+  taskInputs: {
+    key: string; // task.id
+    value: { key: string; images: Blob[] };
+  };
 }
 
 let dbPromise: Promise<IDBPDatabase<StorageSchema>> | null = null;
@@ -70,6 +76,11 @@ function getDB() {
       // KV store (form drafts, batch state)
       if (!db.objectStoreNames.contains('kv')) {
         db.createObjectStore('kv', { keyPath: 'key' });
+      }
+
+      // v2: original input images per task (Files/Blobs clone structurally)
+      if (!db.objectStoreNames.contains('taskInputs')) {
+        db.createObjectStore('taskInputs', { keyPath: 'key' });
       }
     },
   });
@@ -130,6 +141,30 @@ export async function setKV<K extends KVKey>(key: K, value: KVValueMap[K]): Prom
 export async function deleteKV<K extends KVKey>(key: K): Promise<void> {
   const db = await getDB();
   await db.delete('kv', key);
+}
+
+// Task input originals (Blobs). Written once when the task is created,
+// dropped when the task is deleted or all tasks are cleared.
+export async function saveTaskInputs(taskId: string, images: Blob[]): Promise<void> {
+  if (images.length === 0) return;
+  const db = await getDB();
+  await db.put('taskInputs', { key: taskId, images });
+}
+
+export async function loadTaskInputs(taskId: string): Promise<Blob[]> {
+  const db = await getDB();
+  const record = await db.get('taskInputs', taskId);
+  return record?.images ?? [];
+}
+
+export async function deleteTaskInputs(taskId: string): Promise<void> {
+  const db = await getDB();
+  await db.delete('taskInputs', taskId);
+}
+
+export async function clearTaskInputs(): Promise<void> {
+  const db = await getDB();
+  await db.clear('taskInputs');
 }
 
 // Storage persistence request

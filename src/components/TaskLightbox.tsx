@@ -4,11 +4,12 @@
  * into this viewer: grid items stay pure imagery; click opens the full story.
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Download } from "lucide-react";
 import { copyText, downloadImage, downloadText } from "../lib/download";
 import { formatCostUsd } from "../lib/pricing";
+import { loadTaskInputs } from "../lib/storageNew";
 
 import type { ImageTask } from "../types";
 
@@ -63,6 +64,31 @@ function formatTaskDebug(task: ImageTask, errorText: string) {
 
 export function TaskLightbox({ task, onClose, onRetry, onCancel, onRemove, onClearImage, onReuseParams }: TaskLightboxProps) {
   const { t } = useTranslation();
+  const [inputUrls, setInputUrls] = useState<string[]>([]);
+
+  /* Full-resolution inputs live in IndexedDB (taskInputs store); fall back
+     to the small preview thumbnail for tasks created before it existed. */
+  useEffect(() => {
+    if (!task || task.mode !== "vision") {
+      setInputUrls([]);
+      return;
+    }
+    let cancelled = false;
+    const created: string[] = [];
+    setInputUrls([]);
+    void loadTaskInputs(task.id)
+      .then((blobs) => {
+        if (cancelled || blobs.length === 0) return;
+        const urls = blobs.map((blob) => URL.createObjectURL(blob));
+        created.push(...urls);
+        setInputUrls(urls);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+      created.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [task?.id, task?.mode]);
 
   useEffect(() => {
     if (!task) {
@@ -145,7 +171,18 @@ export function TaskLightbox({ task, onClose, onRetry, onCancel, onRemove, onCle
         {/* Stage: image / vision output / failure state */}
         <div className="flex min-h-40 flex-1 items-center justify-center overflow-hidden bg-surface-0 p-3 md:p-4">
           {isVisionTask ? (
-            activeTask.inputThumbnail ? (
+            inputUrls.length > 0 ? (
+              <div className="flex max-h-[78vh] w-full flex-col items-center gap-2 overflow-y-auto">
+                {inputUrls.map((url, index) => (
+                  <img
+                    key={url}
+                    className="max-h-[70vh] w-auto max-w-full rounded object-contain"
+                    src={url}
+                    alt={`input ${index + 1}`}
+                  />
+                ))}
+              </div>
+            ) : activeTask.inputThumbnail ? (
               <img className="max-h-[70vh] rounded object-contain" src={activeTask.inputThumbnail} alt="input preview" />
             ) : (
               <div className="text-sm text-text-tertiary">{t("tasks.noTextYet")}</div>

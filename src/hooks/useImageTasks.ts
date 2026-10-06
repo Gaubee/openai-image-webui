@@ -19,7 +19,15 @@ import {
 import { toI18nError } from "../lib/errors";
 import { buildCompatibleImageRequest } from "../lib/imageSizing";
 import { estimateImageCost, estimateTokenCost, extractUsageFromRaw } from "../lib/pricing";
-import { getTasks, updateTask, deleteTask, clearTasks as clearStoredTasks } from "../lib/storageNew";
+import {
+  getTasks,
+  updateTask,
+  deleteTask,
+  clearTasks as clearStoredTasks,
+  saveTaskInputs,
+  deleteTaskInputs,
+  clearTaskInputs,
+} from "../lib/storageNew";
 import { reportStorageIssue } from "../lib/storageHealth";
 import { generateThumbnail } from "../lib/thumbnail";
 import type { AppSettings, GenerateFormState, ImageCacheStats, ImageTask, InputImageFile, VisionFormState } from "../types";
@@ -618,6 +626,11 @@ export function useImageTasks(settings: AppSettings) {
           current.map((t) => (t.id === id ? { ...t, inputThumbnail: thumb } : t)),
         );
       }).catch(() => undefined);
+      // Originals go to IndexedDB so the lightbox can show full-resolution
+      // input instead of the tiny preview thumbnail.
+      void saveTaskInputs(id, inputImageFiles).catch((error) =>
+        console.warn("[useImageTasks] failed to persist vision inputs", error),
+      );
     }
   }
 
@@ -810,6 +823,7 @@ export function useImageTasks(settings: AppSettings) {
     controllersRef.current.delete(id);
     pendingInputsRef.current.delete(id);
     revokeObjectUrl(currentTask?.imageUrl);
+    void deleteTaskInputs(id).catch(() => undefined);
     setTasks((current) => current.filter((task) => task.id !== id));
 
     // Delete from IndexedDB
@@ -869,6 +883,7 @@ export function useImageTasks(settings: AppSettings) {
     setTasks([]);
     // "Clear tasks" must also mean cleared after a reload — drop the IDB history.
     void clearStoredTasks().catch((error) => console.warn("[useImageTasks] failed to clear stored tasks", error));
+    void clearTaskInputs().catch((error) => console.warn("[useImageTasks] failed to clear task inputs", error));
   }
 
 
