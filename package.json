@@ -5,13 +5,13 @@
   "private": false,
   "type": "module",
   "scripts": {
-    "dev": "concurrently -n upstream,webapp -c yellow,cyan \"portless openai-image-webui vite\" \"portless openai-image-webui-webapp vite --config vite.webapp.config.ts\"",
+    "dev": "concurrently -n upstream,webapp -c yellow,cyan \"portless openai-image-webui vite\" \"portless openai-image-webapp vite --config vite.webapp.config.ts\"",
     "build": "tsc && vite build && vite build --config vite.webapp.config.ts --outDir dist/webapp",
     "preview": "vite preview",
     "predeploy": "pnpm run build",
     "deploy": "gh-pages -d dist",
     "dev:upstream": "portless openai-image-webui vite",
-    "dev:webapp": "portless openai-image-webui-webapp vite --config vite.webapp.config.ts",
+    "dev:webapp": "portless openai-image-webapp vite --config vite.webapp.config.ts",
     "build:upstream": "tsc && vite build",
     "build:webapp": "tsc && vite build --config vite.webapp.config.ts --outDir dist/webapp"
   },
