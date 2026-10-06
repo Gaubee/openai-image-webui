@@ -3,7 +3,7 @@
  * Deep theme applied in R1 redesign (2026-10-06)
  */
 
-import { useMemo, useRef, useState, memo, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, memo, type ChangeEvent, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import type { BatchFormState, ImageTask, InputImageFile } from "../types";
 import {
@@ -29,6 +29,8 @@ interface BatchGenerationPanelProps {
   onSubmit: () => void;
   onRetryBatchErrors: () => void;
   onExportBatch: () => void;
+  /** App-level drag-and-drop routing: register the add-images handler (or null on unmount). */
+  registerDropHandler?: (handler: ((files: FileList | File[]) => void) | null) => void;
 }
 
 const PROMPT_FILE_ACCEPT = ".txt,.md,.csv,text/plain,text/markdown,text/csv";
@@ -44,11 +46,20 @@ export const BatchGenerationPanel = memo(function BatchGenerationPanel({
   onSubmit,
   onRetryBatchErrors,
   onExportBatch,
+  registerDropHandler,
 }: BatchGenerationPanelProps) {
   const { t } = useTranslation();
   const ratioChipGroups = useMemo(() => getRatioChipGroups(model ?? ""), [model]);
   const [inputImageError, setInputImageError] = useState("");
   const promptFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Global drag-and-drop: keep the app-level drop handler pointed at the
+  // latest add-images closure (no dep array — re-registered every render,
+  // unregistered when the panel unmounts, e.g. on mode switch).
+  useEffect(() => {
+    registerDropHandler?.(handleAddInputImages);
+    return () => registerDropHandler?.(null);
+  });
 
   const strictPng = modelRequiresStrictPng(model ?? "");
   const supportsMultiImage = modelLikelySupportsMultipleImages(model ?? "");

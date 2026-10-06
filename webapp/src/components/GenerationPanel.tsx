@@ -39,6 +39,8 @@ interface GenerationPanelProps {
   model?: string;
   onChange: (next: Partial<GenerateFormState>) => void;
   onSubmit: () => void;
+  /** App-level drag-and-drop routing: register the add-images handler (or null on unmount). */
+  registerDropHandler?: (handler: ((files: FileList | File[]) => void) | null) => void;
 }
 
 function roundToSizeStep(value: number, step = SIZE_STEP) {
@@ -140,7 +142,7 @@ function saveRecentSizes(sizes: string[]) {
   }
 }
 
-export const GenerationPanel = memo(function GenerationPanel({ form, error, model, onChange, onSubmit }: GenerationPanelProps) {
+export const GenerationPanel = memo(function GenerationPanel({ form, error, model, onChange, onSubmit, registerDropHandler }: GenerationPanelProps) {
   const { t } = useTranslation();
   const initialParsedSize = parseSize(form.size);
   const [sliderWidth, setSliderWidth] = useState(initialParsedSize?.width ?? DEFAULT_SIZE);
@@ -150,6 +152,14 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
   const maskFileInputRef = useRef<HTMLInputElement>(null);
   const [maskEditorOpen, setMaskEditorOpen] = useState(false);
   const closeMaskEditor = useCallback(() => setMaskEditorOpen(false), []);
+
+  // Global drag-and-drop: keep the app-level drop handler pointed at the
+  // latest add-images closure (no dep array — re-registered every render,
+  // unregistered when the panel unmounts, e.g. on mode switch).
+  useEffect(() => {
+    registerDropHandler?.(handleAddInputImages);
+    return () => registerDropHandler?.(null);
+  });
 
   const strictPng = modelRequiresStrictPng(model ?? "");
   const supportsMultiImage = modelLikelySupportsMultipleImages(model ?? "");

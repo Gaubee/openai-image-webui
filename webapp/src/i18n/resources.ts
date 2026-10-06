@@ -122,7 +122,7 @@ export const resources = {
         disabledHint: "Enter a prompt above to start generating.",
         inputImages: {
           title: "Input images (optional)",
-          hint: "Add a reference image to edit it — keep the original scene and change only what you describe.",
+          hint: "Add a reference image to edit it — keep the original scene and change only what you describe. You can also drag files anywhere on the page.",
           addButton: "Add image",
           addMaskButton: "Add mask",
           paintMaskButton: "Paint mask",
@@ -184,6 +184,7 @@ export const resources = {
 
           library: "Image Library",
         },
+        dropToAdd: "Drop to add reference images",
         modes: {
           generate: "Generate",
           vision: "Vision",
@@ -532,7 +533,7 @@ export const resources = {
         disabledHint: "输入提示词后即可开始生成。",
         inputImages: {
           title: "输入图片（可选）",
-          hint: "添加参考图即可编辑——保留原图场景，只修改你描述的部分。",
+          hint: "添加参考图即可编辑——保留原图场景，只修改你描述的部分。也可以直接把文件拖到页面任意位置。",
           addButton: "添加图片",
           addMaskButton: "添加 Mask",
           paintMaskButton: "绘制蒙版",
@@ -593,6 +594,7 @@ export const resources = {
 
           library: "图片库",
         },
+        dropToAdd: "松开以添加参考图",
         modes: {
           generate: "生成图片",
           vision: "识图",

@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Images } from "lucide-react";
+import { ImagePlus, Images } from "lucide-react";
 import { CanvasGrid } from "./components/CanvasGrid";
 import { GenerationPanel } from "./components/GenerationPanel";
 import { TaskLightbox } from "./components/TaskLightbox";
@@ -232,6 +232,66 @@ export default function App() {
     if (typeof next.prompt === "string") formPersistenceRef.current.setPrompt(next.prompt);
     if (typeof next.size === "string") formPersistenceRef.current.setSize(next.size);
     if (typeof next.advancedJson === "string") formPersistenceRef.current.setAdvancedJson(next.advancedJson);
+  }, []);
+
+  // Global drag-and-drop: dropping files anywhere routes them to the active
+  // panel's input-images handler (panels register via registerPanelDropHandler,
+  // so validation, model rules, and error display stay single-sourced there).
+  const [isFileDragging, setIsFileDragging] = useState(false);
+  const dragDepthRef = useRef(0);
+  const panelDropHandlerRef = useRef<((files: FileList | File[]) => void) | null>(null);
+
+  const registerPanelDropHandler = useCallback(
+    (handler: ((files: FileList | File[]) => void) | null) => {
+      panelDropHandlerRef.current = handler;
+    },
+    [],
+  );
+
+  useEffect(() => {
+    function carriesFiles(event: DragEvent) {
+      return Array.from(event.dataTransfer?.types ?? []).includes("Files");
+    }
+
+    function handleDragEnter(event: DragEvent) {
+      if (!carriesFiles(event)) return;
+      event.preventDefault();
+      dragDepthRef.current += 1;
+      setIsFileDragging(true);
+    }
+
+    function handleDragOver(event: DragEvent) {
+      if (!carriesFiles(event)) return;
+      // Preventing default on dragover is what allows drop to fire at all.
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
+    }
+
+    function handleDragLeave(event: DragEvent) {
+      if (!carriesFiles(event)) return;
+      dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+      if (dragDepthRef.current === 0) setIsFileDragging(false);
+    }
+
+    function handleDrop(event: DragEvent) {
+      if (!carriesFiles(event)) return;
+      event.preventDefault();
+      dragDepthRef.current = 0;
+      setIsFileDragging(false);
+      const files = event.dataTransfer?.files;
+      if (files && files.length > 0) panelDropHandlerRef.current?.(files);
+    }
+
+    window.addEventListener("dragenter", handleDragEnter);
+    window.addEventListener("dragover", handleDragOver);
+    window.addEventListener("dragleave", handleDragLeave);
+    window.addEventListener("drop", handleDrop);
+    return () => {
+      window.removeEventListener("dragenter", handleDragEnter);
+      window.removeEventListener("dragover", handleDragOver);
+      window.removeEventListener("dragleave", handleDragLeave);
+      window.removeEventListener("drop", handleDrop);
+    };
   }, []);
 
   const updateVisionForm = useCallback((next: Partial<VisionFormState>) => {
@@ -588,6 +648,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
                 model={settings.model}
                 onChange={updateForm}
                 onSubmit={handleGenerate}
+                registerDropHandler={registerPanelDropHandler}
               />
             ) : (
               <BatchGenerationPanel
@@ -601,6 +662,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
                 onSubmit={handleBatchGenerate}
                 onRetryBatchErrors={handleRetryBatchErrors}
                 onExportBatch={handleExportBatchClick}
+                registerDropHandler={registerPanelDropHandler}
               />
             )}
           </div>
@@ -698,6 +760,19 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
       {toast ? (
         <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded border border-success/30 bg-surface-1 px-4 py-3 text-sm text-success shadow-soft">
           {toast}
+        </div>
+      ) : null}
+
+      {/* Global drop highlight — shown while files are dragged over the page */}
+      {isFileDragging ? (
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 z-[70] flex items-center justify-center bg-surface-0/80 p-6"
+        >
+          <div className="flex h-full w-full flex-col items-center justify-center gap-3 rounded border-2 border-dashed border-accent/60 text-accent">
+            <ImagePlus className="h-10 w-10" aria-hidden />
+            <p className="text-sm font-medium">{t("workspace.dropToAdd")}</p>
+          </div>
         </div>
       ) : null}
     </div>
