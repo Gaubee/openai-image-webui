@@ -256,7 +256,16 @@ export function TaskLightbox({ task, onClose, onRetry, onCancel, onRemove, onCle
               </button>
             )}
             {!isVisionTask && (
-              <button type="button" className={ghostButton} onClick={() => onReuseParams(activeTask)}>
+              <button
+                type="button"
+                className={ghostButton}
+                onClick={() => {
+                  // Close so the user lands back on the form and sees the
+                  // restored prompt / reference images.
+                  onClose();
+                  onReuseParams(activeTask);
+                }}
+              >
                 {t("tasks.actions.reuseParams")}
               </button>
             )}

@@ -174,6 +174,28 @@ const CanvasTile = memo(function CanvasTile({
   }
 
   /* Vision (OCR) tile: text result or input thumbnail */
+  if (isVisionTask) {
+    return (
+      <button
+        type="button"
+        className={`${base} flex aspect-square flex-col items-start justify-between border-surface-3 p-3 hover:border-accent/40`}
+        onClick={() => onOpenTask(task)}
+        title={task.prompt}
+      >
+        {task.inputThumbnail ? (
+          <img className="h-12 w-12 rounded object-cover ring-1 ring-surface-3" src={task.inputThumbnail} alt="input" />
+        ) : (
+          <FileText className="h-5 w-5 text-text-tertiary" aria-hidden />
+        )}
+        <p className="line-clamp-4 w-full text-left text-[11px] leading-4 text-text-secondary">
+          {task.outputText?.trim() || (running ? t("tasks.analyzing") : t("tasks.noTextYet"))}
+        </p>
+        <span className="rounded bg-surface-3 px-1.5 py-0.5 text-[10px] font-bold text-text-secondary">OCR</span>
+      </button>
+    );
+  }
+
+  /* Generic fallback: non-image task states that have no tile of their own */
   return (
     <button
       type="button"
@@ -181,15 +203,11 @@ const CanvasTile = memo(function CanvasTile({
       onClick={() => onOpenTask(task)}
       title={task.prompt}
     >
-      {task.inputThumbnail ? (
-        <img className="h-12 w-12 rounded object-cover ring-1 ring-surface-3" src={task.inputThumbnail} alt="input" />
-      ) : (
-        <FileText className="h-5 w-5 text-text-tertiary" aria-hidden />
-      )}
-      <p className="line-clamp-4 w-full text-left text-[11px] leading-4 text-text-secondary">
-        {task.outputText?.trim() || (running ? t("tasks.analyzing") : t("tasks.noTextYet"))}
-      </p>
-      <span className="rounded bg-surface-3 px-1.5 py-0.5 text-[10px] font-bold text-text-secondary">OCR</span>
+      <FileText className="h-5 w-5 text-text-tertiary" aria-hidden />
+      <p className="line-clamp-4 w-full text-left text-[11px] leading-4 text-text-secondary">{task.prompt}</p>
+      <span className="rounded bg-surface-3 px-1.5 py-0.5 text-[10px] font-semibold text-text-secondary">
+        {t(`tasks.status.${task.status}`)}
+      </span>
     </button>
   );
 });

@@ -29,6 +29,7 @@ import { DEFAULT_BATCH_FORM, DEFAULT_FORM, DEFAULT_VISION_FORM } from "./lib/sto
 import { toInputImageFile } from "./lib/imageInput";
 import { createBatchId, parsePromptList } from "./lib/promptList";
 import { downloadBatchZip, getTaskBatchId } from "./lib/batchExport";
+import { getCachedInputs } from "./lib/imageCache";
 import type { AppSettings, BatchFormState, GenerateFormState, ImageTask, InputImageFile, ReuseParamsPayload, VisionFormState } from "./types";
 
 
@@ -331,7 +332,12 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
   const buildReusePayloadFromTask = useCallback(async (task: ImageTask): Promise<ReuseParamsPayload> => {
     const pending = getPendingInputs(task.id);
     const isEdit = task.mode === "edit";
-    const hasInputs = isEdit && pending && pending.images.length > 0;
+    // In-memory inputs are dropped once a task succeeds; the persisted copy
+    // stored with the cached result survives that and page reloads.
+    const persisted = isEdit && !pending?.images.length
+      ? await getCachedInputs(task.id).catch(() => null)
+      : null;
+    const hasInputs = isEdit && ((pending?.images.length ?? 0) + (persisted?.images.length ?? 0)) > 0;
 
     // The generate and batch forms both keep their inputImages after a
     // successful submit (so the user can tweak & re-submit). The in-memory
@@ -370,6 +376,10 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
     if (hasInputs && pending) {
       inputImages = await Promise.all(pending.images.map((file: File) => toInputImageFile(file)));
       maskImage = pending.mask ? await toInputImageFile(pending.mask) : null;
+    } else if (hasInputs && persisted) {
+      // Restored from the cache that traveled with the result.
+      inputImages = await Promise.all(persisted.images.map((file: File) => toInputImageFile(file)));
+      maskImage = persisted.mask ? await toInputImageFile(persisted.mask) : null;
     } else if (fallbackAvailable) {
       if (isBatchTask) {
         // The batch form's images are about to move into the generate form.

@@ -10,6 +10,8 @@ import type { TFunction } from "i18next";
 import { listCachedImages, type CachedImageRecord } from "../lib/imageCache";
 import { copyText, downloadImage } from "../lib/download";
 import { downloadLibraryZip } from "../lib/libraryExport";
+import { toInputImageFile } from "../lib/imageInput";
+import { getCachedInputs } from "../lib/imageCache";
 import type { ImageCacheStats, ReuseParamsPayload } from "../types";
 import { ImageCacheSummary } from "./ImageCacheSummary";
 
@@ -615,13 +617,22 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
     setLoadedCount(0);
   }
 
-  function handleReuseFromLibrary(item: LibraryImage) {
+  async function handleReuseFromLibrary(item: LibraryImage) {
+    // The cached record may carry the edit inputs (reference images + mask);
+    // restore them so "reuse params" brings the whole recipe back.
+    const inputs = await getCachedInputs(item.id).catch(() => null);
+    const inputImages = inputs?.images.length
+      ? await Promise.all(inputs.images.map((file: File) => toInputImageFile(file)))
+      : undefined;
+    const maskImage = inputs?.mask ? await toInputImageFile(inputs.mask) : undefined;
     const payload: ReuseParamsPayload = {
       model: item.model || "",
       prompt: item.prompt || "",
       size: item.generationSize || "1024x1024",
       responseFormat: (item.responseFormat as "url" | "b64_json") || "b64_json",
-      // Library images never have in-memory references
+      inputImages,
+      maskImage,
+      // Inputs came from the cached record when available.
       inputImagesLost: false,
     };
     onReuseParams(payload);
