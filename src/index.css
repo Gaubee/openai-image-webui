@@ -1,6 +1,27 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/*
+ * Tailwind v4 CSS-first theme. Upstream keeps these in tailwind.config.js (v3);
+ * this fork runs the v4 PostCSS plugin, which ignores that file, so the
+ * extensions are migrated here. Re-migrate when merging upstream config changes.
+ */
+@theme {
+  --shadow-soft: 0 20px 70px -28px rgba(15, 23, 42, 0.35);
+  --animate-fade-in: fade-in 0.25s ease-out;
+
+  @keyframes fade-in {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, 12px);
+    }
+    100% {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+  }
+}
+
+@source "../index.html";
 
 :root {
   color-scheme: light;
