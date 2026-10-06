@@ -1,13 +1,5 @@
-/*
- * Intent: prompt-first generation form — size picked via ratio chips with
- * precise controls collapsed (2026-10-05, R3 convergence 2026-10-06)
- * Original requirement: prompt as hero, secondary controls in deep space,
- * img2img input images + mask preserved from main branch
- */
-
-import { useEffect, useMemo, useRef, useState, memo, type ChangeEvent, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, memo, type ChangeEvent, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, Minus, Plus } from "lucide-react";
 import type { GenerateFormState, InputImageFile } from "../types";
 import {
   assertMaskMatchesImage,
@@ -15,10 +7,12 @@ import {
   modelLikelySupportsMultipleImages,
   modelRequiresStrictPng,
   prepareInputImage,
+  toInputImageFile,
 } from "../lib/imageInput";
-import { getModelSizingProfile, getRatioChipGroups, defaultSizeForGroup, getSizePresetGroupsForModel } from "../lib/imageSizing";
+import { getModelSizingProfile, getSizePresetGroupsForModel } from "../lib/imageSizing";
 import { Notice } from "./Notice";
 import { ImageDropzone } from "./ImageDropzone";
+import { MaskEditor } from "./MaskEditor";
 
 const SIZE_STEP = 64;
 const MIN_SIZE = 256;
@@ -146,13 +140,14 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
   const [recentSizes, setRecentSizes] = useState<string[]>(() => loadRecentSizes());
   const [inputImageError, setInputImageError] = useState("");
   const maskFileInputRef = useRef<HTMLInputElement>(null);
+  const [maskEditorOpen, setMaskEditorOpen] = useState(false);
+  const closeMaskEditor = useCallback(() => setMaskEditorOpen(false), []);
 
   const strictPng = modelRequiresStrictPng(model ?? "");
   const supportsMultiImage = modelLikelySupportsMultipleImages(model ?? "");
   const isEditMode = form.inputImages.length > 0;
   const modelSizingProfile = useMemo(() => getModelSizingProfile(model ?? ""), [model]);
   const sizePresetGroups = useMemo(() => getSizePresetGroupsForModel(model ?? ""), [model]);
-  const ratioChipGroups = useMemo(() => getRatioChipGroups(model ?? ""), [model]);
   // gpt-image-2: 16px alignment required; gemini: free input (only aspect_ratio matters); others: 64px slider step (cosmetic)
   const sliderStep = modelSizingProfile.mode === "gptImage2" ? 16 : modelSizingProfile.mode === "geminiAspect" ? 8 : SIZE_STEP;
 
@@ -255,7 +250,12 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
       return;
     }
     try {
-      const mask = await prepareInputImage(file, { strictPngOnly: true });
+      // Not prepareInputImage: its strict mode also demands a square image
+      // (a dall-e-2 input rule), which rejected masks for any other ratio.
+      if (file.type !== "image/png") {
+        throw new InputImageError(`Mask must be a PNG. Got: ${file.type || "unknown"}.`);
+      }
+      const mask = await toInputImageFile(file);
       assertMaskMatchesImage(mask, form.inputImages[0]);
       if (form.maskImage) URL.revokeObjectURL(form.maskImage.previewUrl);
       onChange({ maskImage: mask });
@@ -275,9 +275,18 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
     });
     onChange({ inputImages: next });
     // Mask must be dropped if its reference (first image) is gone.
-    if (next.length === 0 && form.maskImage) {
+    if (form.inputImages[0]?.id === id && form.maskImage) {
       URL.revokeObjectURL(form.maskImage.previewUrl);
       onChange({ maskImage: null });
+    }
+  }
+
+  function handlePaintedMask(file: File | null) {
+    setMaskEditorOpen(false);
+    if (file) {
+      void handleAddMask(file);
+    } else {
+      removeMask();
     }
   }
 
@@ -299,14 +308,19 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
     form.inputImages.length > 1 && !!model && !supportsMultiImage;
 
   return (
-    <section className="brushed rounded border border-surface-3 bg-surface-1 p-4 shadow-soft">
-      <form className="space-y-3.5" onSubmit={handleSubmit}>
+    <section className="rounded-3xl border border-white/70 bg-white/85 p-5 shadow-soft backdrop-blur">
+      <div className="mb-5">
+        <h2 className="text-lg font-semibold text-slate-950">{t("generation.title")}</h2>
+        <p className="mt-1 text-sm text-slate-500">{t("generation.subtitle")}</p>
+      </div>
+
+      <form className="space-y-4" onSubmit={handleSubmit}>
         <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-text-secondary">
+          <span className="mb-1.5 block text-sm font-medium text-slate-700">
             {t("generation.prompt")}
           </span>
           <textarea
-            className="min-h-24 w-full resize-y rounded border border-surface-3 bg-surface-2 px-3 py-2.5 text-sm text-text-primary outline-none transition-colors placeholder:text-text-tertiary focus:border-accent"
+            className="min-h-32 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
             placeholder={t("generation.promptPlaceholder")}
             value={form.prompt}
             onChange={(event) => onChange({ prompt: event.target.value })}
@@ -329,12 +343,19 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
         >
           {isEditMode ? (
             <div className="mt-3">
-              <p className="text-xs font-medium text-text-secondary">{t("generation.inputImages.mask")}</p>
-              <p className="mt-1 text-xs text-text-tertiary">{t("generation.inputImages.maskHint")}</p>
+              <p className="text-xs font-medium text-slate-600">{t("generation.inputImages.mask")}</p>
+              <p className="mt-1 text-xs text-slate-500">{t("generation.inputImages.maskHint")}</p>
               <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="flex h-20 w-20 items-center justify-center rounded-lg border border-dashed border-violet-300 bg-violet-50 px-1 text-center text-xs font-medium text-violet-700 transition hover:border-violet-400 hover:bg-violet-100"
+                  onClick={() => setMaskEditorOpen(true)}
+                >
+                  {form.maskImage ? t("generation.inputImages.editMaskButton") : t("generation.inputImages.paintMaskButton")}
+                </button>
                 {form.maskImage ? (
                   <div
-                    className="group relative h-20 w-20 overflow-hidden rounded-lg border border-surface-3 bg-surface-2"
+                    className="group relative h-20 w-20 overflow-hidden rounded-lg border border-slate-200 bg-white"
                     title={`${form.maskImage.file.name} · ${form.maskImage.width}×${form.maskImage.height}`}
                   >
                     <img
@@ -344,7 +365,7 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
                     />
                     <button
                       type="button"
-                      className="absolute right-0 top-0 rounded-bl-lg bg-surface-0/80 px-1.5 py-0.5 text-[10px] font-semibold text-text-primary opacity-0 transition-opacity group-hover:opacity-100"
+                      className="absolute right-0 top-0 rounded-bl-lg bg-slate-900/70 px-1.5 py-0.5 text-[10px] font-semibold text-white opacity-0 transition group-hover:opacity-100"
                       onClick={removeMask}
                     >
                       {t("generation.inputImages.remove")}
@@ -354,10 +375,10 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
                   <>
                     <button
                       type="button"
-                      className="flex h-20 w-20 items-center justify-center rounded-lg border border-dashed border-surface-3 bg-surface-2 p-1 text-xs font-medium text-text-tertiary transition-colors hover:border-accent/50 hover:text-accent"
+                      className="flex h-20 w-20 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white text-xs font-medium text-slate-500 transition hover:border-sky-400 hover:text-sky-600"
                       onClick={() => maskFileInputRef.current?.click()}
                     >
-                      {t("generation.inputImages.addMaskButton")}
+                      + {t("generation.inputImages.addMaskButton")}
                     </button>
                     <input
                       ref={maskFileInputRef}
@@ -373,270 +394,246 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
           ) : null}
         </ImageDropzone>
 
-        {/* Image count — compact stepper (value domain is tiny: 1-20) */}
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-text-secondary">{t("generation.imageCount")}</span>
-          <div className="inline-flex items-center rounded border border-surface-3 bg-surface-2">
-            <button
-              type="button"
-              className="inline-flex min-h-9 items-center justify-center px-2.5 py-1.5 text-text-secondary transition-colors hover:text-text-primary disabled:cursor-not-allowed disabled:text-text-tertiary max-sm:min-h-11 max-sm:min-w-11"
-              onClick={() => onChange({ count: Math.max(1, form.count - 1) })}
-              disabled={form.count <= 1}
-              aria-label="-"
-            >
-              <Minus className="h-3.5 w-3.5" />
-            </button>
-            <input
-              className="w-12 border-x border-surface-3 bg-transparent py-1.5 text-center text-sm tabular-nums text-text-primary outline-none"
-              type="number"
-              min={1}
-              max={20}
-              value={form.count}
-              onChange={(event) => onChange({ count: Math.min(20, Math.max(1, Number(event.target.value) || 1)) })}
-              aria-label={t("generation.imageCount")}
-            />
-            <button
-              type="button"
-              className="inline-flex min-h-9 items-center justify-center px-2.5 py-1.5 text-text-secondary transition-colors hover:text-text-primary disabled:cursor-not-allowed disabled:text-text-tertiary max-sm:min-h-11 max-sm:min-w-11"
-              onClick={() => onChange({ count: Math.min(20, form.count + 1) })}
-              disabled={form.count >= 20}
-              aria-label="+"
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
+        {maskEditorOpen && form.inputImages[0] ? (
+          <MaskEditor
+            image={form.inputImages[0]}
+            initialMask={form.maskImage}
+            onApply={handlePaintedMask}
+            onCancel={closeMaskEditor}
+          />
+        ) : null}
 
-        {/* --- Size section: ratio presets first, precise controls collapsed --- */}
-        <div className="space-y-2.5">
-          <div className="flex items-baseline justify-between gap-3">
-            <p className="text-sm font-medium text-text-primary">{t("generation.size")}</p>
-            <p className="text-xs tabular-nums text-text-tertiary">
-              {currentSize} · {currentRatioLabel || "-"}
+        {/* Image count */}
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-slate-700">
+            {t("generation.imageCount")}
+          </span>
+          <input
+            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+            type="number"
+            min={1}
+            max={20}
+            value={form.count}
+            onChange={(event) => onChange({ count: Number(event.target.value) })}
+          />
+        </label>
+
+        {/* --- Size section --- */}
+        <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 space-y-3">
+          <div>
+            <p className="text-sm font-medium text-slate-700">{t("generation.size")}</p>
+            <p className="mt-0.5 text-xs text-slate-500">
+              {t("generation.currentRatioAuto", { ratio: currentRatioLabel || "-" })}
+              {" · "}
+              {t("generation.sizeStepHint", { step: sliderStep })}
+            </p>
+            <p className="mt-1 rounded-lg border border-sky-100 bg-sky-50 px-2.5 py-1.5 text-xs leading-5 text-sky-700">
+              {t(`generation.sizeCompatibility.${modelSizingProfile.mode}`)}
             </p>
           </div>
 
-          {/* One-tap ratio presets */}
-          <div className="flex flex-wrap gap-1.5">
-            {ratioChipGroups.map((group) => {
-              const active = currentRatioLabel === group.ratio;
-              return (
-                <button
-                  key={group.ratio}
-                  type="button"
-                  className={`min-h-9 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors max-sm:min-h-11 ${
-                    active
-                      ? "border-accent bg-accent/10 text-accent"
-                      : "border-surface-3 bg-surface-1 text-text-secondary hover:bg-surface-2 hover:text-text-primary"
-                  }`}
-                  onClick={() => applySize(defaultSizeForGroup(group))}
-                  title={group.sizes.join(" · ")}
-                >
-                  {group.ratio}
-                </button>
-              );
-            })}
+          {/* Free width × height number inputs */}
+          <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-slate-600">{t("generation.widthPixels")}</span>
+              <input
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm tabular-nums outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                type="number"
+                min={MIN_SIZE}
+                max={MAX_SIZE}
+                step="any"
+                value={sliderWidth}
+                onChange={(event) => {
+                  const raw = Number(event.target.value);
+                  if (!Number.isFinite(raw) || raw <= 0) return;
+                  setSliderWidth(raw);
+                  // Sync now, not just on blur: Enter submits without blurring.
+                  // Out-of-range values are left for blur to clamp (syncing them
+                  // would clamp mid-typing) and the input's min/max block submit.
+                  if (raw >= MIN_SIZE && raw <= MAX_SIZE) onChange({ size: `${raw}x${sliderHeight}` });
+                }}
+                onBlur={() => {
+                  const clamped = clampDimensionExact(sliderWidth);
+                  setSliderWidth(clamped);
+                  applySize(`${clamped}x${sliderHeight}`);
+                }}
+              />
+            </label>
+            <span className="pb-2 text-sm font-medium text-slate-400">×</span>
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-slate-600">{t("generation.heightPixels")}</span>
+              <input
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm tabular-nums outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                type="number"
+                min={MIN_SIZE}
+                max={MAX_SIZE}
+                step="any"
+                value={sliderHeight}
+                onChange={(event) => {
+                  const raw = Number(event.target.value);
+                  if (!Number.isFinite(raw) || raw <= 0) return;
+                  setSliderHeight(raw);
+                  if (raw >= MIN_SIZE && raw <= MAX_SIZE) onChange({ size: `${sliderWidth}x${raw}` });
+                }}
+                onBlur={() => {
+                  const clamped = clampDimensionExact(sliderHeight);
+                  setSliderHeight(clamped);
+                  applySize(`${sliderWidth}x${clamped}`);
+                }}
+              />
+            </label>
           </div>
 
-          {/* Reference image native resolution (edit-mode quick action) */}
-          {form.inputImages.length > 0 ? (
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-xs font-medium text-text-secondary">{t("generation.refImageSize")}</span>
-              {Array.from(new Map(form.inputImages.map((img) => [`${img.width}x${img.height}`, img])).values()).map(
-                (img) => {
-                  const sizeStr = `${img.width}x${img.height}`;
-                  const isActive = isSizeActive(sizeStr);
-                  return (
-                    <button
-                      key={sizeStr}
-                      type="button"
-                      className={`rounded-full border px-3 py-1.5 text-xs font-medium tabular-nums transition-colors ${
-                        isActive
-                          ? "border-accent bg-accent/10 text-accent"
-                          : "border-surface-3 bg-surface-1 text-text-secondary hover:bg-surface-2 hover:text-text-primary"
-                      }`}
-                      onClick={() => applySize(sizeStr)}
-                      title={t("generation.refImageSizeHint")}
-                    >
-                      {sizeStr} · {getRatioLabel(sizeStr)}
-                    </button>
-                  );
-                },
-              )}
-            </div>
-          ) : null}
-
-          {/* Custom size: precise inputs, sliders, model compatibility notes */}
-          <details className="group rounded border border-surface-3 bg-surface-2 p-3 outline-none [&_summary::-webkit-details-marker]:hidden">
-            <summary className="flex cursor-pointer select-none list-none items-center justify-between text-xs font-medium text-text-secondary focus:outline-none">
-              <span>{t("generation.customSize")}</span>
-              <ChevronDown className="h-3.5 w-3.5 text-text-tertiary transition-transform group-open:rotate-180" />
-            </summary>
-            <div className="mt-2.5 space-y-3">
-              <p className="rounded border border-surface-3 bg-surface-1 px-2.5 py-1.5 text-xs leading-5 text-text-tertiary">
-                {t(`generation.sizeCompatibility.${modelSizingProfile.mode}`)}
-              </p>
-
-              {/* Free width × height number inputs */}
-              <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
-                <label className="block">
-                  <span className="mb-1 block text-xs font-medium text-text-secondary">{t("generation.widthPixels")}</span>
-                  <input
-                    className="w-full rounded border border-surface-3 bg-surface-1 px-3 py-2 text-sm tabular-nums text-text-primary outline-none transition-colors focus:border-accent"
-                    type="number"
-                    min={MIN_SIZE}
-                    max={MAX_SIZE}
-                    step="any"
-                    value={sliderWidth}
-                    onChange={(event) => {
-                      const raw = Number(event.target.value);
-                      if (!Number.isFinite(raw) || raw <= 0) return;
-                      setSliderWidth(raw);
-                    }}
-                    onBlur={() => {
-                      const clamped = clampDimensionExact(sliderWidth);
-                      setSliderWidth(clamped);
-                      applySize(`${clamped}x${sliderHeight}`);
-                    }}
-                  />
-                </label>
-                <span className="pb-2 text-sm font-medium text-text-tertiary">×</span>
-                <label className="block">
-                  <span className="mb-1 block text-xs font-medium text-text-secondary">{t("generation.heightPixels")}</span>
-                  <input
-                    className="w-full rounded border border-surface-3 bg-surface-1 px-3 py-2 text-sm tabular-nums text-text-primary outline-none transition-colors focus:border-accent"
-                    type="number"
-                    min={MIN_SIZE}
-                    max={MAX_SIZE}
-                    step="any"
-                    value={sliderHeight}
-                    onChange={(event) => {
-                      const raw = Number(event.target.value);
-                      if (!Number.isFinite(raw) || raw <= 0) return;
-                      setSliderHeight(raw);
-                    }}
-                    onBlur={() => {
-                      const clamped = clampDimensionExact(sliderHeight);
-                      setSliderHeight(clamped);
-                      applySize(`${sliderWidth}x${clamped}`);
-                    }}
-                  />
-                </label>
-              </div>
-
-              {/* Sliders */}
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block text-xs text-text-secondary">
-                  <span className="mb-1 block">{t("generation.widthPixels")}: {sliderWidth}</span>
-                  <input
-                    type="range"
-                    min={MIN_SIZE}
-                    max={MAX_SIZE}
-                    step={sliderStep}
-                    value={sliderWidth}
-                    className="w-full accent-accent"
-                    onChange={(event) => {
-                      const nextWidth = clampDimension(Number(event.target.value), sliderStep);
-                      setSliderWidth(nextWidth);
-                      applySize(`${nextWidth}x${sliderHeight}`);
-                    }}
-                  />
-                </label>
-                <label className="block text-xs text-text-secondary">
-                  <span className="mb-1 block">{t("generation.heightPixels")}: {sliderHeight}</span>
-                  <input
-                    type="range"
-                    min={MIN_SIZE}
-                    max={MAX_SIZE}
-                    step={sliderStep}
-                    value={sliderHeight}
-                    className="w-full accent-accent"
-                    onChange={(event) => {
-                      const nextHeight = clampDimension(Number(event.target.value), sliderStep);
-                      setSliderHeight(nextHeight);
-                      applySize(`${sliderWidth}x${nextHeight}`);
-                    }}
-                  />
-                </label>
-              </div>
-
-              {/* Raw "WxH" text input — paste any size */}
+          {/* Sliders */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block text-xs text-slate-600">
+              <span className="mb-1 block">{t("generation.widthPixels")}: {sliderWidth}</span>
               <input
-                className="w-full rounded border border-surface-3 bg-surface-1 px-3 py-2 text-xs text-text-primary outline-none transition-colors placeholder:text-text-tertiary focus:border-accent"
-                placeholder={t("generation.sizePlaceholder")}
-                value={form.size}
-                onChange={(event) => onChange({ size: event.target.value })}
-                onBlur={() => applySize(form.size)}
+                type="range"
+                min={MIN_SIZE}
+                max={MAX_SIZE}
+                step={sliderStep}
+                value={sliderWidth}
+                className="w-full accent-sky-500"
+                onChange={(event) => {
+                  const nextWidth = clampDimension(Number(event.target.value), sliderStep);
+                  setSliderWidth(nextWidth);
+                  applySize(`${nextWidth}x${sliderHeight}`);
+                }}
               />
+            </label>
+            <label className="block text-xs text-slate-600">
+              <span className="mb-1 block">{t("generation.heightPixels")}: {sliderHeight}</span>
+              <input
+                type="range"
+                min={MIN_SIZE}
+                max={MAX_SIZE}
+                step={sliderStep}
+                value={sliderHeight}
+                className="w-full accent-sky-500"
+                onChange={(event) => {
+                  const nextHeight = clampDimension(Number(event.target.value), sliderStep);
+                  setSliderHeight(nextHeight);
+                  applySize(`${sliderWidth}x${nextHeight}`);
+                }}
+              />
+            </label>
+          </div>
 
-              {/* Common sizes grouped by aspect ratio */}
-              <div>
-                <p className="text-xs font-medium text-text-secondary">{t("generation.commonSizes")}</p>
-                <p className="mb-2 mt-1 text-xs text-text-tertiary">{t("generation.commonSizesHint")}</p>
-                <div className="space-y-2">
-                  {sizePresetGroups.map((group) => (
-                    <div key={group.ratio}>
-                      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
-                        {group.ratio}
-                      </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {group.sizes.map((size) => (
-                          <button
-                            key={size}
-                            type="button"
-                            className={`rounded-full border px-2.5 py-1 text-[11px] font-medium tabular-nums transition-colors ${
-                              isSizeActive(size)
-                                ? "border-accent bg-accent/10 text-accent"
-                                : "border-surface-3 bg-surface-1 text-text-secondary hover:bg-surface-2 hover:text-text-primary"
-                            }`}
-                            onClick={() => applySize(size)}
-                          >
-                            {size}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Recent sizes */}
-              <div>
-                <p className="mb-2 text-xs font-medium text-text-secondary">{t("generation.recentSizes")}</p>
-                {recentSizes.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {recentSizes.map((size) => (
+          {/* Reference image native resolution button */}
+          {form.inputImages.length > 0 ? (
+            <div>
+              <p className="text-xs font-medium text-slate-600">{t("generation.refImageSize")}</p>
+              <div className="mt-1.5 flex flex-wrap gap-2">
+                {Array.from(new Map(form.inputImages.map((img) => [`${img.width}x${img.height}`, img])).values()).map(
+                  (img) => {
+                    const sizeStr = `${img.width}x${img.height}`;
+                    const isActive = isSizeActive(sizeStr);
+                    return (
                       <button
-                        key={size}
+                        key={sizeStr}
                         type="button"
-                        className={`rounded-full border px-3 py-1.5 text-xs font-medium tabular-nums transition-colors ${
-                          isSizeActive(size)
-                            ? "border-accent bg-accent/10 text-accent"
-                            : "border-surface-3 bg-surface-1 text-text-secondary hover:bg-surface-2 hover:text-text-primary"
+                        className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                          isActive
+                            ? "border-violet-400 bg-violet-50 text-violet-700"
+                            : "border-violet-200 bg-white text-violet-600 hover:bg-violet-50"
                         }`}
-                        onClick={() => applySize(size)}
+                        onClick={() => applySize(sizeStr)}
+                        title={t("generation.refImageSizeHint")}
                       >
-                        {size}
+                        📐 {sizeStr} · {getRatioLabel(sizeStr)}
                       </button>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-text-tertiary">{t("generation.recentSizesEmpty")}</p>
+                    );
+                  },
                 )}
               </div>
             </div>
-          </details>
+          ) : null}
         </div>
 
+        {/* More size options: raw "WxH" input, common sizes by ratio, recent sizes */}
+        <details className="group rounded-xl border border-slate-200 bg-slate-50/70 p-3 outline-none [&_summary::-webkit-details-marker]:hidden">
+          <summary className="cursor-pointer text-xs font-medium text-slate-600 select-none flex items-center justify-between list-none focus:outline-none">
+            <span>{t("generation.sizeMoreOptions")}</span>
+            <span className="text-[10px] text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+          </summary>
+          <div className="mt-2.5 space-y-3">
+            {/* Text fallback — for pasting arbitrary "WxH" */}
+            <input
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs outline-none transition placeholder:text-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+              placeholder={t("generation.sizePlaceholder")}
+              value={form.size}
+              onChange={(event) => onChange({ size: event.target.value })}
+              onBlur={() => applySize(form.size)}
+            />
+
+            {/* Common sizes grouped by aspect ratio */}
+            <div>
+              <p className="text-xs font-medium text-slate-600">{t("generation.commonSizes")}</p>
+              <p className="mt-1 text-xs text-slate-500 mb-2">{t("generation.commonSizesHint")}</p>
+              <div className="space-y-2">
+                {sizePresetGroups.map((group) => (
+                  <div key={group.ratio}>
+                    <p className="mb-1 text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
+                      {group.ratio}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {group.sizes.map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
+                            isSizeActive(size)
+                              ? "border-emerald-400 bg-emerald-50 text-emerald-700"
+                              : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                          }`}
+                          onClick={() => applySize(size)}
+                        >
+                          {size}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Recent sizes */}
+            <div>
+              <p className="text-xs font-medium text-slate-600 mb-2">{t("generation.recentSizes")}</p>
+              {recentSizes.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {recentSizes.map((size) => (
+                    <button
+                      key={size}
+                      type="button"
+                      className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                        isSizeActive(size)
+                          ? "border-amber-400 bg-amber-50 text-amber-700"
+                          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                      }`}
+                      onClick={() => applySize(size)}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-500">{t("generation.recentSizesEmpty")}</p>
+              )}
+            </div>
+          </div>
+        </details>
+
         {/* Advanced JSON Params */}
-        <details className="group rounded border border-surface-3 bg-surface-2 p-3 outline-none [&_summary::-webkit-details-marker]:hidden">
-          <summary className="flex cursor-pointer select-none list-none items-center justify-between text-xs font-medium text-text-secondary focus:outline-none">
+        <details className="group rounded-xl border border-slate-200 bg-slate-50/70 p-3 outline-none [&_summary::-webkit-details-marker]:hidden">
+          <summary className="cursor-pointer text-xs font-medium text-slate-600 select-none flex items-center justify-between list-none focus:outline-none">
             <span>{t("generation.advancedJsonParams")}</span>
-            <ChevronDown className="h-3.5 w-3.5 text-text-tertiary transition-transform group-open:rotate-180" />
+            <span className="text-[10px] text-slate-400 group-open:rotate-180 transition-transform">▼</span>
           </summary>
           <div className="mt-2.5">
             <textarea
-              className="min-h-24 w-full resize-y rounded border border-surface-3 bg-surface-1 px-3 py-2 font-mono text-xs text-text-primary outline-none transition-colors placeholder:text-text-tertiary focus:border-accent"
+              className="min-h-24 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs outline-none transition placeholder:text-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
               placeholder={'{\n  "quality": "high",\n  "style": "vivid"\n}'}
               value={form.advancedJson}
               onChange={(event) => onChange({ advancedJson: event.target.value })}
@@ -646,16 +643,15 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
 
         {error ? <Notice variant="error">{error}</Notice> : null}
 
-        <button
-          className="inline-flex w-full items-center justify-center rounded bg-accent px-5 py-3 text-sm font-semibold text-surface-0 shadow-sm transition-colors hover:bg-accent-dim disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-text-tertiary disabled:shadow-none"
-          type="submit"
-          disabled={!form.prompt.trim()}
-        >
-          {isEditMode ? t("generation.edit") : t("generation.generate")}
-        </button>
-        {form.prompt.trim() ? null : (
-          <p className="mt-2 text-center text-xs text-text-tertiary">{t("generation.disabledHint")}</p>
-        )}
+        <div className="sticky bottom-0 z-10 -mx-5 -mb-5 rounded-b-3xl bg-white/95 px-5 pb-5 pt-3">
+          <button
+            className="inline-flex w-full items-center justify-center rounded-xl bg-sky-500 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+            type="submit"
+            disabled={!form.prompt.trim()}
+          >
+            {isEditMode ? t("generation.edit") : t("generation.generate")}
+          </button>
+        </div>
       </form>
     </section>
   );

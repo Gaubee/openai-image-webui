@@ -1,32 +1,27 @@
-/*
- * Intent: Main app shell - dual-mode canvas (Generate/Batch), drawer navigation (2026-10-05)
- * New IA: prompt-first, inline results, secondary panels in drawer
- */
-
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Images } from "lucide-react";
-import { CanvasGrid } from "./components/CanvasGrid";
 import { GenerationPanel } from "./components/GenerationPanel";
-import { TaskLightbox } from "./components/TaskLightbox";
 import { Header } from "./components/Header";
 import { ImageLibrary } from "./components/ImageLibrary";
-import { ImagePreviewModal } from "./components/ImagePreviewModal";
+import { ImagePreviewModal, type PreviewState } from "./components/ImagePreviewModal";
+import { Notice } from "./components/Notice";
 import { SettingsPanel } from "./components/SettingsPanel";
+import { TaskQueue } from "./components/TaskQueue";
 import { VisionPanel } from "./components/VisionPanel";
 import { BatchRenamePanel } from "./components/BatchRenamePanel";
 import { BatchGenerationPanel } from "./components/BatchGenerationPanel";
 import { StorageHealthBanner } from "./components/StorageHealthBanner";
-import { Drawer } from "./components/Drawer";
+
 
 import { useImageTasks } from "./hooks/useImageTasks";
 import { useSettings } from "./hooks/useSettings";
-import { useFormPersistence } from "./hooks/useFormPersistence";
-import { isI18nErrorKey, toI18nError } from "./lib/errors";
+import { toFriendlyError } from "./lib/errors";
 import { parseAdvancedJson } from "./lib/parseAdvancedJson";
 import { stripGeminiSizeArtifacts } from "./lib/imageSizing";
-import { DEFAULT_BATCH_FORM, DEFAULT_FORM, DEFAULT_VISION_FORM } from "./lib/storage";
-import { toInputImageFile } from "./lib/imageInput";
+import { DEFAULT_BATCH_FORM, DEFAULT_FORM, DEFAULT_VISION_FORM, loadBatchPrompts, saveBatchPrompts } from "./lib/storage";
+import { modelRequiresStrictPng, prepareInputImage, toInputImageFile } from "./lib/imageInput";
+import { getCachedInputs } from "./lib/imageCache";
+import { stripInternalParams } from "./api/requestShaping";
 import { createBatchId, parsePromptList } from "./lib/promptList";
 import { downloadBatchZip, getTaskBatchId } from "./lib/batchExport";
 import type { AppSettings, BatchFormState, GenerateFormState, ImageTask, InputImageFile, ReuseParamsPayload, VisionFormState } from "./types";
@@ -100,8 +95,37 @@ function validateVisionRequest(
   }
 }
 
-type AppMode = "generate" | "batch";
-type DrawerPanel = "settings" | "library" | "vision" | "rename" | null;
+type WorkspacePanel = "tasks" | "library";
+type WorkspaceMode = "generate" | "vision" | "rename" | "batch";
+
+const MODE_ICONS: Record<WorkspaceMode, ReactNode> = {
+  generate: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0">
+      <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z" />
+      <path d="M19 15l.7 1.8L21.5 17.5l-1.8.7L19 20l-.7-1.8-1.8-.7 1.8-.7L19 15z" />
+    </svg>
+  ),
+  vision: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0">
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  ),
+  batch: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0">
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
+    </svg>
+  ),
+  rename: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0">
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+    </svg>
+  ),
+};
 
 /** Build an {@link InputImageFile} from a File with a fresh object URL. */
 function makeInputImageFile(file: File, width = 0, height = 0): InputImageFile {
@@ -116,67 +140,52 @@ function makeInputImageFile(file: File, width = 0, height = 0): InputImageFile {
 
 export default function App() {
   const { i18n, t } = useTranslation();
-  // Maps thrown errors to localized copy; i18n keys from toI18nError resolve here.
-  const showFriendlyError = useCallback(
-    (error: unknown) => {
-      const value = toI18nError(error, {
-        unknown: t("errors.unknown"),
-        requestFailed: t("errors.requestFailed"),
-      });
-      return isI18nErrorKey(value) ? t(value) : value;
-    },
-    [t],
-  );
   const { settings, setSettings, resetSettings } = useSettings();
   const [form, setForm] = useState<GenerateFormState>(DEFAULT_FORM);
   const [visionForm, setVisionForm] = useState<VisionFormState>(DEFAULT_VISION_FORM);
-  const [batchForm, setBatchForm] = useState<BatchFormState>(DEFAULT_BATCH_FORM);
+  const [batchForm, setBatchForm] = useState<BatchFormState>(() => ({
+    ...DEFAULT_BATCH_FORM,
+    promptsText: loadBatchPrompts(),
+  }));
   const [formError, setFormError] = useState("");
   const [visionError, setVisionError] = useState("");
   const [batchError, setBatchError] = useState("");
-  const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
+  const [currentBatchId, setCurrentBatchId] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem("openai-image-webui:current-batch-id");
+    } catch {
+      return null;
+    }
+  });
   const [isExportingBatch, setIsExportingBatch] = useState(false);
 
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [lightboxTask, setLightboxTask] = useState<ImageTask | null>(null);
-  const [activeMode, setActiveMode] = useState<AppMode>("generate");
-  const [drawerPanel, setDrawerPanel] = useState<DrawerPanel>(null);
-
-  // Form drafts (prompt/size/advancedJson/batch state) persist to IDB kv. The
-  // ref keeps the setters callable from memo-stable callbacks.
-  const formPersistence = useFormPersistence();
-  const formPersistenceRef = useRef(formPersistence);
-  formPersistenceRef.current = formPersistence;
-
-  // One-shot seeding once the persisted draft arrives — only fields the user
-  // has not touched this session get restored. Batch prompts live in the same
-  // kv store (migrated from localStorage by storageMigration).
   useEffect(() => {
-    if (!formPersistence.loaded) return;
-    const { lastPrompt, lastSize, lastAdvancedJson, lastBatchPrompts, currentBatchId: draftBatchId } =
-      formPersistenceRef.current.draft;
-    setForm((current) => ({
-      ...current,
-      prompt: current.prompt || lastPrompt || "",
-      size: lastSize || current.size,
-      advancedJson: current.advancedJson || lastAdvancedJson || "",
-    }));
-    if (lastBatchPrompts !== undefined) {
-      setBatchForm((current) => ({ ...current, promptsText: current.promptsText || lastBatchPrompts }));
-    }
-    if (draftBatchId !== undefined) {
-      setCurrentBatchId((current) => current ?? draftBatchId);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot seed on load
-  }, [formPersistence.loaded]);
-
-  // Keep the batch id in the kv draft store (survives reloads without
-  // localStorage; storageMigration seeds it from the legacy key).
-  useEffect(() => {
-    if (currentBatchId) {
-      formPersistenceRef.current.setCurrentBatchId(currentBatchId);
+    try {
+      if (currentBatchId) {
+        localStorage.setItem("openai-image-webui:current-batch-id", currentBatchId);
+      } else {
+        localStorage.removeItem("openai-image-webui:current-batch-id");
+      }
+    } catch {
+      // Ignore localStorage failures.
     }
   }, [currentBatchId]);
+
+  const [preview, setPreview] = useState<PreviewState | null>(null);
+  const [activePanel, setActivePanel] = useState<WorkspacePanel>("tasks");
+  const [activeMode, setActiveMode] = useState<WorkspaceMode>("generate");
+  const outputRef = useRef<HTMLDivElement>(null);
+
+  // On mobile the output sits far below the form, and on desktop a long task list can scroll it away.
+  const showOutput = useCallback(() => {
+    setActivePanel("tasks");
+    requestAnimationFrame(() => {
+      const top = outputRef.current?.getBoundingClientRect().top;
+      if (top !== undefined && (top < 0 || top > window.innerHeight / 2)) {
+        outputRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+  }, []);
 
   const {
     tasks,
@@ -197,16 +206,18 @@ export default function App() {
 
   const [toast, setToast] = useState<string>("");
 
-  const closePreview = useCallback(() => setPreviewUrl(null), []);
+  const openPreview = useCallback((url: string, gallery: string[] = []) => {
+    const index = gallery.indexOf(url);
+    setPreview(index >= 0 ? { urls: gallery, index } : { urls: [url], index: 0 });
+  }, []);
+  const navigatePreview = useCallback((index: number) => {
+    setPreview((current) => (current ? { ...current, index } : current));
+  }, []);
+  const closePreview = useCallback(() => setPreview(null), []);
 
-  // "Clear tasks" is a destructive low-frequency action — ghost icon in the
-  // header with a confirm gate, disabled while there is nothing to clear.
-  const handleClearTasks = useCallback(() => {
-    if (tasks.length === 0) return;
-    if (window.confirm(t("headerExtras.clearTasksConfirm"))) {
-      clearTasks();
-    }
-  }, [clearTasks, t, tasks.length]);
+  const activeTaskCount = tasks.filter(
+    (task) => task.status === "pending" || task.status === "running",
+  ).length;
 
   // Auto-dismiss toast after 3 seconds
   useEffect(() => {
@@ -228,9 +239,6 @@ export default function App() {
   // otherwise every App render defeats the memoization entirely.
   const updateForm = useCallback((next: Partial<GenerateFormState>) => {
     setForm((current) => ({ ...current, ...next }));
-    if (typeof next.prompt === "string") formPersistenceRef.current.setPrompt(next.prompt);
-    if (typeof next.size === "string") formPersistenceRef.current.setSize(next.size);
-    if (typeof next.advancedJson === "string") formPersistenceRef.current.setAdvancedJson(next.advancedJson);
   }, []);
 
   const updateVisionForm = useCallback((next: Partial<VisionFormState>) => {
@@ -241,7 +249,7 @@ export default function App() {
     setBatchForm((current) => {
       const merged = { ...current, ...next };
       if (typeof next.promptsText === "string") {
-        formPersistenceRef.current.setBatchPrompts(next.promptsText);
+        saveBatchPrompts(next.promptsText);
       }
       return merged;
     });
@@ -254,11 +262,12 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
     // ignored by buildCompatibleImageRequest (the "改尺寸都无效" bug). Strip
     // them here so form.size stays the single source of truth. No-op for
     // non-Gemini models.
+    // Internal keys (_batchId / _batchIndex) must not follow into the generate
+    // form, or the new task gets counted as part of the old batch.
     const { prompt: cleanPrompt, extraParams: cleanExtra } = stripGeminiSizeArtifacts(
       payload.model,
       payload.prompt,
-      payload.size,
-      payload.extraParams,
+      payload.extraParams && stripInternalParams(payload.extraParams),
     );
 
     console.log("[reuseParams] handleReuseParams", {
@@ -309,9 +318,10 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
       };
     });
 
-    // Switch to Generate mode to show the applied params
+    // Switch back to the generate workspace so the applied params are
+    // actually visible — the form lives behind the mode switch.
     setActiveMode("generate");
-    setDrawerPanel(null);
+    setActivePanel("tasks");
     setFormError("");
     window.scrollTo({ top: 0, behavior: "smooth" });
 
@@ -330,8 +340,13 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
    * and for mask size validation.
    */
   const buildReusePayloadFromTask = useCallback(async (task: ImageTask): Promise<ReuseParamsPayload> => {
-    const pending = getPendingInputs(task.id);
     const isEdit = task.mode === "edit";
+    const memoryInputs = getPendingInputs(task.id);
+    // In-memory inputs are dropped once a task succeeds; the persisted copy
+    // stored with the cached result survives that and page reloads.
+    const pending = isEdit && !memoryInputs?.images.length
+      ? await getCachedInputs(task.id).catch(() => null)
+      : memoryInputs;
     const hasInputs = isEdit && pending && pending.images.length > 0;
 
     // The generate and batch forms both keep their inputImages after a
@@ -401,7 +416,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
       maskImage,
       inputImagesLost,
     };
-  }, [getPendingInputs]);
+  }, [batchForm.inputImages, form.inputImages, form.maskImage, getPendingInputs]);
 
   const handleReuseTask = useCallback(
     (task: ImageTask) => {
@@ -409,6 +424,41 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
     },
     [buildReusePayloadFromTask, handleReuseParams],
   );
+
+  /** Load a generated image into the generate form as the edit source. */
+  const handleEditImage = useCallback(async (imageUrl: string) => {
+    setActiveMode("generate");
+    setFormError("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    try {
+      const blob = await (await fetch(imageUrl)).blob();
+      const type = blob.type || "image/png";
+      const image = await prepareInputImage(
+        new File([blob], `edit-source.${type.split("/")[1] || "png"}`, { type }),
+        { strictPngOnly: modelRequiresStrictPng(settings.model) },
+      );
+
+      setForm((current) => {
+        for (const item of current.inputImages) URL.revokeObjectURL(item.previewUrl);
+        if (current.maskImage) URL.revokeObjectURL(current.maskImage.previewUrl);
+        return {
+          ...current,
+          inputImages: [image],
+          maskImage: null,
+          size: `${image.width}x${image.height}`,
+        };
+      });
+      setToast(t("tasks.messages.editImageLoaded"));
+    } catch (error) {
+      setFormError(
+        toFriendlyError(error, {
+          unknown: t("errors.unknown"),
+          requestFailed: t("errors.requestFailed"),
+        }),
+      );
+    }
+  }, [settings.model, t]);
 
   const handleGenerate = useCallback(() => {
     setFormError("");
@@ -426,11 +476,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
         mustBeObject: t("errors.advancedJsonObject"),
       });
       addTasks(normalizedForm, extraParams);
-      // Bring the materializing result into view — the payoff moment should
-      // not require hunting for it below the fold.
-      requestAnimationFrame(() => {
-        document.getElementById("result-gallery")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
+      showOutput();
       // Keep inputImages/maskImage in the form — user may want to tweak the
       // prompt and re-submit. Revoking their object URLs here would break
       // the in-flight task's preview data too. They get cleared when the
@@ -439,10 +485,13 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
 
     } catch (error) {
       setFormError(
-        showFriendlyError(error),
+        toFriendlyError(error, {
+          unknown: t("errors.unknown"),
+          requestFailed: t("errors.requestFailed"),
+        }),
       );
     }
-  }, [addTasks, form, settings, t]);
+  }, [addTasks, form, settings, showOutput, t]);
 
   const handleAnalyzeImages = useCallback(() => {
     setVisionError("");
@@ -464,13 +513,17 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
         mustBeObject: t("errors.advancedJsonObject"),
       });
       addVisionTask(normalizedForm, extraParams);
+      showOutput();
       setVisionForm((current) => ({ ...current, prompt: normalizedForm.prompt }));
     } catch (error) {
       setVisionError(
-        showFriendlyError(error),
+        toFriendlyError(error, {
+          unknown: t("errors.unknown"),
+          requestFailed: t("errors.requestFailed"),
+        }),
       );
     }
-  }, [addVisionTask, settings, t, visionForm]);
+  }, [addVisionTask, settings, showOutput, t, visionForm]);
 
   const handleBatchGenerate = useCallback(() => {
     setBatchError("");
@@ -500,12 +553,16 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
         batchId,
       });
       setCurrentBatchId(batchId);
+      showOutput();
     } catch (error) {
       setBatchError(
-        showFriendlyError(error),
+        toFriendlyError(error, {
+          unknown: t("errors.unknown"),
+          requestFailed: t("errors.requestFailed"),
+        }),
       );
     }
-  }, [addBatchTasks, batchForm, settings, t]);
+  }, [addBatchTasks, batchForm, settings, showOutput, t]);
 
   const handleRetryBatchErrors = useCallback(() => {
     if (!currentBatchId) return;
@@ -521,7 +578,10 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
       setToast(t("batch.actions.exportDone", { exported: result.exported, missing: result.missing }));
     } catch (error) {
       setBatchError(
-        showFriendlyError(error),
+        toFriendlyError(error, {
+          unknown: t("errors.unknown"),
+          requestFailed: t("errors.requestFailed"),
+        }),
       );
     } finally {
       setIsExportingBatch(false);
@@ -533,54 +593,55 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
   }, [handleExportBatch]);
 
   return (
-    <div className="flex min-h-dvh flex-col bg-surface-0 text-text-primary xl:h-dvh xl:overflow-hidden">
-      <Header
-        onOpenVision={() => setDrawerPanel("vision")}
-        onOpenRename={() => setDrawerPanel("rename")}
-        onOpenLibrary={() => setDrawerPanel("library")}
-        onOpenSettings={() => setDrawerPanel("settings")}
-        isConnected={!!(settings.apiKey.trim() && settings.baseUrl.trim())}
-        hasTasks={tasks.length > 0}
-        onClearTasks={handleClearTasks}
-      />
 
-      <StorageHealthBanner />
-
-      {/* App shell: control rail + canvas. The page itself never scrolls on
-          desktop — each pane scrolls internally, like a native workbench. */}
-      <div className="flex min-h-0 flex-1 flex-col gap-4 px-4 pb-4 xl:flex-row xl:overflow-hidden xl:pt-4">
-        {/* Control rail: mode switch on top, panel below, CTA pinned by panel */}
-        <section
-          className="flex w-full shrink-0 flex-col gap-3 xl:w-[340px]"
-          aria-label={t("workspace.modes.generate")}
-        >
-          <div className="flex shrink-0 rounded border border-surface-3 bg-surface-1 p-0.5" role="group" aria-label={t("workspace.modes.generate")}>
-            {(["generate", "batch"] as const).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => setActiveMode(mode)}
-                aria-pressed={activeMode === mode}
-                className={`min-h-9 flex-1 whitespace-nowrap rounded px-4 py-1.5 text-sm font-medium transition-colors max-sm:min-h-11 ${
-                  activeMode === mode
-                    ? "bg-accent/10 text-accent ring-1 ring-accent/40 ring-inset"
-                    : "text-text-secondary hover:text-text-primary"
-                }`}
-              >
-                {t(`workspace.modes.${mode}`)}
-              </button>
-            ))}
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_#e0f2fe,_transparent_34rem),linear-gradient(135deg,_#f8fafc,_#eef2ff)] px-4 py-6 text-slate-900 md:px-8">
+      <div className="mx-auto max-w-7xl">
+        <main className="grid gap-6 grid-cols-1 lg:grid-cols-[380px_1fr] lg:grid-rows-[auto_1fr] items-start">
+          {/* On desktop the header sits above the output column so the sticky sidebar starts at the top and fits one screen. */}
+          <div className="space-y-4 lg:col-start-2">
+            <Header taskCount={tasks.length} onClearTasks={clearTasks} />
+            <StorageHealthBanner />
           </div>
-          <div className="min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-0.5">
+
+          {/* LEFT COLUMN: SUPER CONTROL CENTER (STICKY ON DESKTOP) */}
+          <aside className="lg:sticky lg:top-6 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto lg:pr-2 space-y-6">
+            <SettingsPanel settings={settings} onChange={setSettings} onReset={resetSettings} />
+
+            {/* Workspace Mode Selection */}
+            <nav aria-label={t("workspace.modes.generate")} className="grid grid-cols-2 gap-2">
+              {(["generate", "vision", "batch", "rename"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  aria-pressed={activeMode === mode}
+                  className={`rounded-2xl border p-3 text-left transition ${
+                    activeMode === mode
+                      ? "border-slate-950 bg-slate-950 text-white shadow-soft"
+                      : "border-white/70 bg-white/75 text-slate-600 backdrop-blur hover:border-slate-300 hover:bg-white hover:text-slate-900"
+                  }`}
+                  onClick={() => setActiveMode(mode)}
+                >
+                  <span className="flex items-center gap-1.5 text-sm font-semibold">
+                    {MODE_ICONS[mode]}
+                    {t(`workspace.modes.${mode}`)}
+                  </span>
+                  <span
+                    className={`mt-1 block text-[11px] leading-4 ${
+                      activeMode === mode ? "text-slate-300" : "text-slate-400"
+                    }`}
+                  >
+                    {t(`workspace.modeDescriptions.${mode}`)}
+                  </span>
+                </button>
+              ))}
+            </nav>
+
+            {/* Active Input Panel */}
             {activeMode === "generate" ? (
-              <GenerationPanel
-                form={form}
-                error={formError}
-                model={settings.model}
-                onChange={updateForm}
-                onSubmit={handleGenerate}
-              />
-            ) : (
+              <GenerationPanel form={form} error={formError} model={settings.model} onChange={updateForm} onSubmit={handleGenerate} />
+            ) : activeMode === "vision" ? (
+              <VisionPanel form={visionForm} error={visionError} visionModel={settings.visionModel} onChange={updateVisionForm} onSubmit={handleAnalyzeImages} />
+            ) : activeMode === "batch" ? (
               <BatchGenerationPanel
                 form={batchForm}
                 error={batchError}
@@ -593,101 +654,81 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
                 onRetryBatchErrors={handleRetryBatchErrors}
                 onExportBatch={handleExportBatchClick}
               />
+            ) : (
+              <BatchRenamePanel settings={settings} />
+            )}
+
+            <Notice>{t("notice.cors")}</Notice>
+          </aside>
+
+          {/* RIGHT COLUMN: PURE GALLERY / OUTPUT PANEL */}
+          <div ref={outputRef} className="space-y-6 scroll-mt-6 lg:col-start-2">
+            {/* Viewport Select Tab (Tasks vs Library) */}
+            <div className="rounded-2xl border border-white/70 bg-white/75 p-1 shadow-sm backdrop-blur">
+              <div className="grid grid-cols-2 gap-1">
+                {(["tasks", "library"] as const).map((panel) => {
+                  const badge = panel === "tasks" ? activeTaskCount : cacheStats.count;
+                  return (
+                    <button
+                      key={panel}
+                      type="button"
+                      aria-pressed={activePanel === panel}
+                      className={`flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition ${
+                        activePanel === panel
+                          ? "bg-slate-950 text-white shadow-sm"
+                          : "text-slate-500 hover:bg-white hover:text-slate-900"
+                      }`}
+                      onClick={() => setActivePanel(panel)}
+                    >
+                      {t(`workspace.tabs.${panel}`)}
+                      {badge > 0 ? (
+                        <span
+                          className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none ${
+                            activePanel === panel
+                              ? "bg-white/20 text-white"
+                              : "bg-slate-200 text-slate-600"
+                          }`}
+                        >
+                          {badge}
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Active Output Area (Tasks or Library Grid) */}
+            {activePanel === "tasks" ? (
+              <TaskQueue
+                tasks={tasks}
+                onPreview={openPreview}
+                onRetry={retryTask}
+                onCancel={cancelTask}
+                onRemove={removeTask}
+                onClearTaskImage={clearTaskImage}
+                onReuseParams={handleReuseTask}
+                onEditImage={handleEditImage}
+              />
+            ) : (
+              <ImageLibrary
+                stats={cacheStats}
+                onPreview={openPreview}
+                onDeleteImage={clearTaskImage}
+                onReuseParams={handleReuseParams}
+                onEditImage={handleEditImage}
+                onClearImageCache={clearCachedImages}
+              />
             )}
           </div>
-        </section>
-
-        {/* Canvas: imagery first — grid of tiles, click for the full story */}
-        <section className="flex min-w-0 flex-1 flex-col xl:overflow-hidden" aria-label={t("canvas.title")}>
-          {(() => {
-            const visibleTasks =
-              activeMode === "batch" && currentBatchId
-                ? tasks.filter((task) => getTaskBatchId(task) === currentBatchId)
-                : tasks;
-            if (visibleTasks.length === 0) {
-              return (
-                <div className="brushed flex min-h-[45vh] flex-1 flex-col items-center justify-center gap-3 rounded border border-dashed border-surface-3 bg-surface-1/40 px-6 text-center">
-                  <Images className="h-8 w-8 text-text-tertiary" aria-hidden />
-                  <p className="text-sm font-medium text-text-secondary">{t("canvas.empty.title")}</p>
-                  <p className="max-w-xs text-xs leading-5 text-text-tertiary">{t("canvas.empty.hint")}</p>
-                </div>
-              );
-            }
-            return (
-              <div className="min-h-0 flex-1 xl:overflow-y-auto xl:pr-0.5">
-                <CanvasGrid
-                  tasks={visibleTasks}
-                  onOpenTask={setLightboxTask}
-                  onRetry={retryTask}
-                />
-              </div>
-            );
-          })()}
-        </section>
+        </main>
       </div>
 
-      {/* Drawer navigation */}
-      <Drawer
-        open={drawerPanel === "settings"}
-        onClose={() => setDrawerPanel(null)}
-        title={t("settings.title")}
-      >
-        <SettingsPanel settings={settings} onChange={setSettings} onReset={resetSettings} />
-      </Drawer>
+      <ImagePreviewModal preview={preview} onNavigate={navigatePreview} onClose={closePreview} />
 
-      <Drawer
-        open={drawerPanel === "library"}
-        onClose={() => setDrawerPanel(null)}
-        title={t("library.title")}
-        size="lg"
-      >
-        <ImageLibrary
-          stats={cacheStats}
-          onPreview={setPreviewUrl}
-          onDeleteImage={clearTaskImage}
-          onReuseParams={handleReuseParams}
-          onClearImageCache={clearCachedImages}
-        />
-      </Drawer>
-
-      <Drawer
-        open={drawerPanel === "vision"}
-        onClose={() => setDrawerPanel(null)}
-        title={t("vision.title")}
-        size="lg"
-      >
-        <VisionPanel
-          form={visionForm}
-          error={visionError}
-          visionModel={settings.visionModel}
-          onChange={updateVisionForm}
-          onSubmit={handleAnalyzeImages}
-        />
-      </Drawer>
-
-      <Drawer
-        open={drawerPanel === "rename"}
-        onClose={() => setDrawerPanel(null)}
-        title={t("batchRename.title")}
-      >
-        <BatchRenamePanel settings={settings} />
-      </Drawer>
-
-      <TaskLightbox
-        task={lightboxTask}
-        onClose={() => setLightboxTask(null)}
-        onRetry={retryTask}
-        onCancel={cancelTask}
-        onRemove={removeTask}
-        onClearImage={clearTaskImage}
-        onReuseParams={handleReuseTask}
-      />
-
-      <ImagePreviewModal imageUrl={previewUrl} onClose={closePreview} />
-
-      {/* Toast */}
+      {/* Toast notification */}
       {toast ? (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded border border-success/30 bg-surface-1 px-4 py-3 text-sm text-success shadow-soft">
+        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 animate-fade-in rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-medium text-emerald-700 shadow-lg">
           {toast}
         </div>
       ) : null}

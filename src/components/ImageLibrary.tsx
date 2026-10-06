@@ -1,22 +1,16 @@
-/*
- * Intent: Image library with virtual scrolling, marquee selection, and ZIP export
- * Deep theme applied in R1 redesign (2026-10-06)
- */
-
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
 import { useTranslation } from "react-i18next";
-import { ListChecks, MoreVertical } from "lucide-react";
-import type { TFunction } from "i18next";
-import { listCachedImages, type CachedImageRecord } from "../lib/imageCache";
+import { getCachedInputs, listCachedImages, type CachedImageRecord } from "../lib/imageCache";
+import { toInputImageFile } from "../lib/imageInput";
 import { copyText, downloadImage } from "../lib/download";
 import { downloadLibraryZip } from "../lib/libraryExport";
 import type { ImageCacheStats, ReuseParamsPayload } from "../types";
 import { ImageCacheSummary } from "./ImageCacheSummary";
 
 const PAGE_SIZE = 50;
-const CARD_MIN_WIDTH = 200;
+const CARD_MIN_WIDTH = 240;
 const GRID_GAP = 16;
-const VIRTUAL_ROW_HEIGHT = 430;
+const VIRTUAL_ROW_HEIGHT = 500;
 const OVERSCAN_ROWS = 2;
 const MARQUEE_THRESHOLD = 4;
 const AUTO_SCROLL_MARGIN = 80;
@@ -44,10 +38,11 @@ type LibraryImage = CachedImageRecord & {
 
 interface ImageLibraryProps {
   stats: ImageCacheStats;
-  onPreview: (imageUrl: string) => void;
+  onPreview: (imageUrl: string, gallery: string[]) => void;
   onDeleteImage: (id: string) => void;
   onClearImageCache: () => void;
   onReuseParams: (payload: ReuseParamsPayload) => void;
+  onEditImage: (imageUrl: string) => void;
 }
 
 function formatBytes(value: number) {
@@ -70,7 +65,7 @@ function getColumnCount(width: number) {
   return Math.max(1, Math.floor((width + GRID_GAP) / (CARD_MIN_WIDTH + GRID_GAP)));
 }
 
-export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDeleteImage, onClearImageCache, onReuseParams }: ImageLibraryProps) {
+export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDeleteImage, onClearImageCache, onReuseParams, onEditImage }: ImageLibraryProps) {
   const { t } = useTranslation();
   const [items, setItems] = useState<LibraryImage[]>([]);
   const [hasMore, setHasMore] = useState(false);
@@ -82,11 +77,9 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [marquee, setMarquee] = useState<MarqueeState | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const hasItems = items.length > 0;
   const objectUrlsRef = useRef(new Set<string>());
   const virtualGridRef = useRef<HTMLDivElement | null>(null);
-  // The grid element mounts only after items load — state so the measurement
-  // effect can re-attach its ResizeObserver when it appears.
-  const [gridEl, setGridEl] = useState<HTMLDivElement | null>(null);
   const lastClickedIdRef = useRef<string | null>(null);
   const autoScrollRef = useRef<{ direction: -1 | 0 | 1; raf: number }>({ direction: 0, raf: 0 });
 
@@ -108,31 +101,16 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
 
   const gridTopRef = useRef(0);
 
-  /** The Drawer scrolls this library — fall back to the document when standalone. */
-  const resolveScrollParent = useCallback((): HTMLElement | null => {
-    return (virtualGridRef.current?.closest("aside") as HTMLElement | null) ?? null;
-  }, []);
-
   const updateGridTop = useCallback(() => {
     const grid = virtualGridRef.current;
-    if (!grid) {
-      return;
-    }
-    const scrollParent = resolveScrollParent();
-    if (scrollParent) {
-      gridTopRef.current =
-        grid.getBoundingClientRect().top +
-        scrollParent.scrollTop -
-        scrollParent.getBoundingClientRect().top;
-    } else {
+    if (grid) {
       gridTopRef.current = grid.getBoundingClientRect().top + window.scrollY;
     }
-  }, [resolveScrollParent]);
+  }, []);
 
   const updateViewport = useCallback(() => {
-    const scrollParent = resolveScrollParent();
-    const scrollTop = scrollParent ? scrollParent.scrollTop : window.scrollY;
-    const height = scrollParent ? scrollParent.clientHeight : window.innerHeight;
+    const scrollTop = window.scrollY;
+    const height = window.innerHeight;
 
     if (gridTopRef.current === 0) {
       updateGridTop();
@@ -165,7 +143,7 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
       }
       return prev;
     });
-  }, [updateGridTop, resolveScrollParent]);
+  }, [updateGridTop]);
 
   const loadFirstPage = useCallback(async () => {
     setIsLoading(true);
@@ -244,23 +222,14 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
       scheduleUpdate(true);
     });
 
-    // The grid mounts only after items load (async) — re-attach whenever the
-    // element appears, or gridWidth stays 0 and the grid is stuck at 1 column.
-    // Measure synchronously first: RO's first callback can be delayed (and in
-    // embedded webviews may never fire), which would pin the grid at 1 column.
-    if (gridEl) {
-      setGridWidth(gridEl.getBoundingClientRect().width);
-      observer.observe(gridEl);
+    if (virtualGridRef.current) {
+      observer.observe(virtualGridRef.current);
     }
-
-    // The library scrolls inside its Drawer (overflow-y-auto), not the window —
-    // virtualization must listen to the nearest scrollable ancestor.
-    const scrollParent = (gridEl?.closest("aside") as HTMLElement | null) ?? null;
 
     const handleScroll = () => scheduleUpdate(false);
     const handleResize = () => scheduleUpdate(true);
 
-    scrollParent?.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("resize", handleResize);
     scheduleUpdate(true);
 
@@ -270,10 +239,13 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
       }
 
       observer.disconnect();
-      scrollParent?.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", handleResize);
     };
-  }, [gridEl, updateGridTop, updateViewport]);
+    // The grid element only mounts once items exist; re-run so the observer
+    // attaches to it; otherwise gridWidth stays 0 and everything lays out as
+    // one 516px-tall column.
+  }, [hasItems, updateGridTop, updateViewport]);
 
 
   const virtualGrid = useMemo(() => {
@@ -395,15 +367,7 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
         autoScrollRef.current.raf = 0;
         return;
       }
-      const delta = autoScrollRef.current.direction * AUTO_SCROLL_SPEED;
-      // Marquee selection lives inside the Drawer — scroll its container,
-      // falling back to the window when rendered standalone.
-      const scrollParent = resolveScrollParent();
-      if (scrollParent) {
-        scrollParent.scrollBy(0, delta);
-      } else {
-        window.scrollBy(0, delta);
-      }
+      window.scrollBy(0, autoScrollRef.current.direction * AUTO_SCROLL_SPEED);
       autoScrollRef.current.raf = requestAnimationFrame(tick);
     };
     autoScrollRef.current.raf = requestAnimationFrame(tick);
@@ -592,6 +556,11 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
     setMessageKey("library.messages.downloadStarted");
   }
 
+  const handlePreview = useCallback(
+    (imageUrl: string) => onPreview(imageUrl, items.map((item) => item.objectUrl)),
+    [items, onPreview],
+  );
+
   function handleDelete(item: LibraryImage) {
     if (!window.confirm(t("library.deleteConfirm"))) {
       return;
@@ -615,23 +584,32 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
     setLoadedCount(0);
   }
 
-  function handleReuseFromLibrary(item: LibraryImage) {
+  async function handleReuseFromLibrary(item: LibraryImage) {
+    const inputs = await getCachedInputs(item.id).catch(() => null);
     const payload: ReuseParamsPayload = {
       model: item.model || "",
       prompt: item.prompt || "",
       size: item.generationSize || "1024x1024",
       responseFormat: (item.responseFormat as "url" | "b64_json") || "b64_json",
-      // Library images never have in-memory references
+      extraParams: item.extraParams,
+      inputImages: inputs ? await Promise.all(inputs.images.map((file) => toInputImageFile(file))) : undefined,
+      maskImage: inputs?.mask ? await toInputImageFile(inputs.mask) : null,
+      // Records cached before inputs were persisted can't tell whether they
+      // were edits, so don't claim anything was lost.
       inputImagesLost: false,
     };
     onReuseParams(payload);
   }
 
   return (
-    <section className="brushed rounded border border-surface-3 bg-surface-1 p-5">
+    <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-soft">
       <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div className="min-w-0 flex-1">
-          <p className="text-sm text-text-secondary">{t("library.subtitle")}</p>
+        <div>
+          <h2 className="text-lg font-semibold text-slate-950">{t("library.title")}</h2>
+          <p className="mt-1 text-sm text-slate-500">{t("library.subtitle")}</p>
+        </div>
+        <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500">
+          {t("tasks.cache.summary", { count: stats.count, size: formatBytes(stats.size) })}
         </div>
       </div>
 
@@ -642,7 +620,7 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
       {pendingNewCount > 0 ? (
         <button
           type="button"
-          className="mb-4 flex w-full items-center justify-center gap-2 rounded border border-accent bg-accent px-4 py-2.5 text-sm font-medium text-surface-0 transition-colors hover:bg-accent-dim disabled:cursor-not-allowed disabled:opacity-60"
+          className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-medium text-sky-700 transition hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-60"
           disabled={isLoading}
           onClick={() => void refreshLibrary()}
         >
@@ -650,35 +628,33 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
         </button>
       ) : null}
 
-      {messageKey ? <div className="mb-4 text-xs text-success">{t(messageKey)}</div> : null}
+      {messageKey ? <div className="mb-4 text-xs text-emerald-600">{t(messageKey)}</div> : null}
 
       {items.length > 0 ? (
         <div className="mb-4 flex flex-wrap items-center gap-2">
           {!selectionMode ? (
             <button
               type="button"
-              className="inline-flex items-center gap-1.5 rounded border border-surface-3 bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-primary transition-colors hover:bg-surface-3"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
               onClick={enterSelectionMode}
-              title={t("library.selection.hint")}
             >
-              <ListChecks className="h-3.5 w-3.5" aria-hidden />
               {t("library.selection.enter")}
             </button>
           ) : (
             <>
-              <span className="rounded-full bg-surface-2 px-3 py-1 text-xs font-medium text-text-primary">
+              <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-700">
                 {t("library.selection.count", { count: selectedIds.size })}
               </span>
               <button
                 type="button"
-                className="rounded border border-surface-3 bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-primary transition-colors hover:bg-surface-3"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
                 onClick={selectAllLoaded}
               >
                 {t("library.selection.selectAll")}
               </button>
               <button
                 type="button"
-                className="rounded border border-surface-3 bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-primary transition-colors hover:bg-surface-3 disabled:cursor-not-allowed disabled:text-text-tertiary"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
                 disabled={selectedIds.size === 0}
                 onClick={clearSelection}
               >
@@ -686,7 +662,7 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
               </button>
               <button
                 type="button"
-                className="rounded border border-accent bg-accent px-3 py-1.5 text-xs font-semibold text-surface-0 transition-colors hover:bg-accent-dim disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-text-tertiary"
+                className="rounded-lg border border-sky-300 bg-sky-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:bg-slate-300"
                 disabled={selectedIds.size === 0 || isExporting}
                 onClick={() => void handleDownloadSelectedZip()}
               >
@@ -696,28 +672,25 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
               </button>
               <button
                 type="button"
-                className="ml-auto rounded border border-surface-3 bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-3"
+                className="ml-auto rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
                 onClick={exitSelectionMode}
               >
                 {t("library.selection.exit")}
               </button>
-              <p className="basis-full text-xs text-text-tertiary">{t("library.selection.hint")}</p>
+              <p className="basis-full text-xs text-slate-400">{t("library.selection.hint")}</p>
             </>
           )}
         </div>
       ) : null}
 
       {items.length === 0 ? (
-        <div className="rounded border border-dashed border-surface-3 bg-surface-2 px-6 py-14 text-center text-sm text-text-secondary">
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-14 text-center text-sm text-slate-500">
           {isLoading ? t("library.loading") : t("library.empty")}
         </div>
       ) : (
         <>
           <div
-            ref={(el) => {
-              virtualGridRef.current = el;
-              setGridEl(el);
-            }}
+            ref={virtualGridRef}
             className={`relative ${selectionMode ? "select-none" : ""}`}
             style={{ height: virtualGrid.totalHeight }}
             onMouseDown={handleGridMouseDown}
@@ -742,10 +715,11 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
                       isSelected={isSelected}
                       selectionMode={selectionMode}
                       t={t}
-                      onPreview={onPreview}
+                      onPreview={handlePreview}
                       onDownload={handleDownload}
                       onCopyPrompt={handleCopyPrompt}
                       onReuse={handleReuseFromLibrary}
+                      onEdit={onEditImage}
                       onDelete={handleDelete}
                       onToggleSelect={toggleSelectOne}
                     />
@@ -755,7 +729,7 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
             ))}
             {marquee ? (
               <div
-                className="pointer-events-none absolute z-20 rounded-sm border-2 border-accent bg-accent/20"
+                className="pointer-events-none absolute z-20 rounded-sm border-2 border-sky-400 bg-sky-300/20"
                 style={{
                   left: Math.min(marquee.startX, marquee.currentX),
                   top: Math.min(marquee.startY, marquee.currentY),
@@ -770,7 +744,7 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
             <div className="mt-5 flex justify-center">
               <button
                 type="button"
-                className="rounded border border-surface-3 bg-surface-2 px-4 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-surface-3 disabled:cursor-not-allowed disabled:text-text-tertiary"
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
                 disabled={isLoading}
                 onClick={() => void handleLoadMore()}
               >
@@ -788,11 +762,12 @@ interface ImageCardProps {
   item: LibraryImage;
   isSelected: boolean;
   selectionMode: boolean;
-  t: TFunction;
+  t: (key: string, options?: any) => string;
   onPreview: (url: string) => void;
   onDownload: (item: LibraryImage) => void;
   onCopyPrompt: (item: LibraryImage) => void;
   onReuse: (item: LibraryImage) => void;
+  onEdit: (imageUrl: string) => void;
   onDelete: (item: LibraryImage) => void;
   onToggleSelect: (id: string, e: React.MouseEvent) => void;
 }
@@ -806,14 +781,13 @@ const ImageCard = memo(function ImageCard({
   onDownload,
   onCopyPrompt,
   onReuse,
+  onEdit,
   onDelete,
   onToggleSelect,
 }: ImageCardProps) {
-  const { i18n } = useTranslation();
-  const [moreOpen, setMoreOpen] = useState(false);
   const cardClass = [
-    "relative flex h-full flex-col overflow-hidden rounded border bg-surface-2 transition-colors",
-    isSelected ? "border-accent ring-2 ring-accent/30" : "border-surface-3",
+    "relative flex h-full flex-col overflow-hidden rounded-2xl border bg-white shadow-sm transition",
+    isSelected ? "border-sky-500 ring-2 ring-sky-300" : "border-slate-200",
     selectionMode ? "cursor-pointer select-none" : "",
   ]
     .filter(Boolean)
@@ -836,7 +810,7 @@ const ImageCard = memo(function ImageCard({
       {selectionMode ? (
         <div
           className={`pointer-events-none absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full border-2 text-xs font-bold ${
-            isSelected ? "border-accent bg-accent text-surface-0" : "border-surface-4 bg-surface-4/70 text-transparent"
+            isSelected ? "border-sky-500 bg-sky-500 text-white" : "border-white bg-white/70 text-transparent"
           }`}
           aria-hidden
         >
@@ -845,7 +819,7 @@ const ImageCard = memo(function ImageCard({
       ) : null}
       <button
         type="button"
-        className="block aspect-square w-full shrink-0 bg-surface-3"
+        className="block h-56 w-full shrink-0 bg-slate-100"
         onClick={() => onPreview(item.objectUrl)}
         aria-label={t("library.previewImage")}
         tabIndex={selectionMode ? -1 : 0}
@@ -859,100 +833,65 @@ const ImageCard = memo(function ImageCard({
         />
       </button>
       <div className="flex min-h-0 flex-1 flex-col space-y-3 p-3">
-        <div className="flex flex-wrap items-center gap-2 text-xs text-text-tertiary">
-          <span>
-            {new Date(item.taskCreatedAt || item.cachedAt).toLocaleString(i18n.resolvedLanguage, {
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </span>
-          <span>{formatBytes(item.size)}</span>
+        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+          <span>{new Date(item.taskCreatedAt || item.cachedAt).toLocaleString()}</span>
+          <span>{formatBytes(item.blob.size)}</span>
         </div>
-        <p className="line-clamp-2 min-h-10 text-sm leading-5 text-text-primary">
+        <p className="line-clamp-2 min-h-10 text-sm leading-5 text-slate-700">
           {item.prompt || t("library.unknownPrompt")}
         </p>
-        <div className="flex items-center justify-between gap-2 text-xs text-text-secondary">
-          <span className="truncate" title={item.model || t("library.unknownModel")}>
-            {item.model || t("library.unknownModel")}
-          </span>
-          <span className="shrink-0 tabular-nums text-text-tertiary">{item.generationSize || "-"}</span>
-        </div>
-        <div className="flex items-center gap-2">
+        <dl className="grid grid-cols-2 gap-2 text-xs text-slate-500">
+          <div className="rounded-lg bg-slate-50 p-2">
+            <dt className="font-medium text-slate-700">{t("tasks.fields.model")}</dt>
+            <dd className="mt-1 truncate">{item.model || t("library.unknownModel")}</dd>
+          </div>
+          <div className="rounded-lg bg-slate-50 p-2">
+            <dt className="font-medium text-slate-700">{t("tasks.fields.size")}</dt>
+            <dd className="mt-1">{item.generationSize || "-"}</dd>
+          </div>
+        </dl>
+        <div className="mt-auto flex flex-wrap gap-2">
           <button
             type="button"
-            className="rounded border border-surface-3 bg-surface-1 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
-            onClick={() => onPreview(item.objectUrl)}
-            tabIndex={selectionMode ? -1 : 0}
-          >
-            {t("tasks.actions.preview")}
-          </button>
-          <button
-            type="button"
-            className="rounded border border-accent/40 bg-surface-1 px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/10"
+            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
             onClick={() => void onDownload(item)}
             tabIndex={selectionMode ? -1 : 0}
           >
             {t("tasks.actions.download")}
           </button>
-          <div className="relative ml-auto">
-            <button
-              type="button"
-              className="rounded border border-surface-3 bg-surface-1 px-2 py-1.5 text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
-              aria-label={t("tasks.actions.more")}
-              aria-expanded={moreOpen}
-              aria-haspopup="menu"
-              onClick={() => setMoreOpen((open) => !open)}
-              tabIndex={selectionMode ? -1 : 0}
-            >
-              <MoreVertical className="h-3.5 w-3.5" />
-            </button>
-            {moreOpen && (
-              <div
-                role="menu"
-                className="absolute bottom-full right-0 z-20 mb-1 w-40 rounded border border-surface-3 bg-surface-1 p-1 shadow-soft"
-              >
-                <button
-                  type="button"
-                  role="menuitem"
-                  className="block w-full rounded px-3 py-2 text-left text-xs font-medium text-text-secondary transition-colors hover:bg-surface-2 disabled:cursor-not-allowed disabled:text-text-tertiary"
-                  disabled={!item.prompt}
-                  onClick={() => {
-                    setMoreOpen(false);
-                    void onCopyPrompt(item);
-                  }}
-                  tabIndex={selectionMode ? -1 : 0}
-                >
-                  {t("tasks.actions.copyPrompt")}
-                </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  className="block w-full rounded px-3 py-2 text-left text-xs font-medium text-text-secondary transition-colors hover:bg-surface-2"
-                  onClick={() => {
-                    setMoreOpen(false);
-                    onReuse(item);
-                  }}
-                  tabIndex={selectionMode ? -1 : 0}
-                >
-                  {t("tasks.actions.reuseParams")}
-                </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  className="block w-full rounded px-3 py-2 text-left text-xs font-medium text-error transition-colors hover:bg-error/10"
-                  onClick={() => {
-                    setMoreOpen(false);
-                    onDelete(item);
-                  }}
-                  tabIndex={selectionMode ? -1 : 0}
-                >
-                  {t("tasks.actions.delete")}
-                </button>
-              </div>
-            )}
-          </div>
+          <button
+            type="button"
+            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
+            disabled={!item.prompt}
+            onClick={() => void onCopyPrompt(item)}
+            tabIndex={selectionMode ? -1 : 0}
+          >
+            {t("tasks.actions.copyPrompt")}
+          </button>
+          <button
+            type="button"
+            className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-medium text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
+            onClick={() => void onReuse(item)}
+            tabIndex={selectionMode ? -1 : 0}
+          >
+            {t("tasks.actions.reuseParams")}
+          </button>
+          <button
+            type="button"
+            className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-700 transition hover:border-violet-300 hover:bg-violet-100"
+            onClick={() => onEdit(item.objectUrl)}
+            tabIndex={selectionMode ? -1 : 0}
+          >
+            {t("tasks.actions.editImage")}
+          </button>
+          <button
+            type="button"
+            className="rounded-lg border border-rose-100 bg-white px-3 py-1.5 text-xs font-medium text-rose-600 transition hover:border-rose-200 hover:bg-rose-50"
+            onClick={() => onDelete(item)}
+            tabIndex={selectionMode ? -1 : 0}
+          >
+            {t("tasks.actions.delete")}
+          </button>
         </div>
       </div>
     </article>

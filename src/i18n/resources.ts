@@ -1,8 +1,3 @@
-/*
- * Intent: zh/en translation tree — single source of UI copy (2026-10-05)
- * Original requirement: bilingual UI; keys must stay in parity across locales
- */
-
 export const LANGUAGE_STORAGE_KEY = "openai-image-webui:language";
 
 export const SUPPORTED_LANGUAGES = ["en", "zh-CN"] as const;
@@ -28,26 +23,15 @@ export const resources = {
         badge: "Browser-only BYOK",
         title: "OpenAI Image WebUI",
         subtitle: "Pure frontend BYOK image generation for OpenAI-compatible APIs.",
-        openMenu: "Open menu",
-        status: {
-          connected: "Connected",
-          notConnected: "Not connected",
-        },
-      },
-      common: {
-        close: "Close",
-      },
-      headerExtras: {
-        clearTasks: "Clear all tasks",
-        clearTasksConfirm: "Delete all task history from this browser? Generated images already saved to the library are kept.",
+        github: "GitHub",
+        clearTasks: "Clear tasks",
+        clearTasksConfirm: "Clear the task list? Running tasks will be cancelled. Images already saved stay in the Image Library.",
       },
       settings: {
         title: "API Settings",
-        language: "Language",
         subtitle: "Bring your own endpoint and key.",
         reset: "Reset",
         edit: "Edit",
-        migrationFailed: "Storage migration failed — recent localStorage data could not be imported. Your old data is still intact.",
         fold: "Fold",
         providerPresets: "Provider Presets",
         presetsNote:
@@ -95,8 +79,12 @@ export const resources = {
         imageCount: "Image Count",
         size: "Size (width x height)",
         sizePlaceholder: "For example: 1024x1536",
+        resolutionSlider: "Direct resolution sliders",
         widthPixels: "Width (px)",
         heightPixels: "Height (px)",
+        currentSize: "Current size: {{size}}",
+        currentRatioAuto: "Auto ratio: {{ratio}}",
+        sizeStepHint: "Slider step: {{step}}px.",
         sizeCompatibility: {
           free: "Free WxH mode: the selected size is sent as-is for OpenAI-compatible relay models.",
           openaiFixed: "OpenAI fixed-size mode: requests are automatically mapped to the closest supported size to avoid API rejection.",
@@ -104,10 +92,11 @@ export const resources = {
           geminiAspect: "Nano Banana / Gemini mode: the closest supported aspect ratio is sent as aspect_ratio and appended to the prompt as --ar for fallback; size is kept for OpenAI-compatible relays.",
         },
         commonSizes: "Compatible sizes",
-        customSize: "Custom size",
+        sizeMoreOptions: "More size options",
         commonSizesHint: "Grouped by aspect ratio. For model-specific APIs, submission may normalize to the nearest supported option.",
         recentSizes: "Recent sizes",
         recentSizesEmpty: "No recent sizes yet. Pick a preset or enter one manually.",
+        recommendedSize: "Suggested size: {{size}}",
         refImageSize: "Reference image resolution",
         refImageSizeHint: "Use this image's native resolution for pixel-perfect editing.",
 
@@ -119,17 +108,19 @@ export const resources = {
         advancedJsonParams: "Advanced JSON Params",
         generate: "Generate",
         edit: "Edit",
-        disabledHint: "Enter a prompt above to start generating.",
         inputImages: {
           title: "Input images (optional)",
-          hint: "Add a reference image to edit it — keep the original scene and change only what you describe.",
+          hint: "Upload to enable edit mode. With images, requests go to /images/edits.",
           addButton: "Add image",
           addMaskButton: "Add mask",
+          paintMaskButton: "🖌 Paint mask",
+          editMaskButton: "🖌 Edit mask",
           mask: "Mask (optional)",
           maskHint: "Same size as the first image. Transparent areas are editable.",
           remove: "Remove",
           size: "{{width}}×{{height}}",
           editModeBadge: "Edit mode",
+          dropHere: "Drop images here",
           multipleImagesWarning:
             "The selected model may not support multiple reference images; only the first one could be honoured.",
         },
@@ -143,14 +134,10 @@ export const resources = {
         prompt: "Vision Prompt",
         promptPlaceholder: "Describe this image in detail: what is shown, what it means, and any text present.",
         detail: "Vision detail",
-        detailHint: "Choose “High detail” when fine details matter; “Auto” lets the model decide and is usually cheaper.",
-        detailAuto: "Auto (model decides)",
-        detailHigh: "High detail",
-        detailLow: "Low detail",
+        detailHint: "Use high when fine details matter; auto is cheaper when the model can decide.",
         advancedJsonParams: "Advanced JSON Params",
         modelHint: "Current vision model: {{model}}. Change it in API Settings if your endpoint uses another vision model.",
         analyze: "Analyze",
-        disabledHint: "Add at least one image to start analyzing.",
         inputImages: {
           title: "Images to analyze",
           hint: "PNG, JPEG, and WebP are supported. Images stay in memory and are sent directly to your configured endpoint.",
@@ -172,8 +159,6 @@ export const resources = {
           "Could not cache a generated image. It is still shown in this session, but will be lost after a reload. Try clearing the image cache.",
         imageCacheEvictionFailed:
           "Could not check the image cache size. Caching may be unreliable in this session.",
-        migrationFailed:
-          "Storage migration failed — your old localStorage data is untouched and will be retried next launch.",
       },
 
       workspace: {
@@ -197,7 +182,7 @@ export const resources = {
       },
       library: {
         title: "Image Library",
-        subtitle: "Every image you generate is saved locally — browse, download, or reuse it anytime.",
+        subtitle: "Browse generated images from browser storage without stretching the task queue.",
         loading: "Loading...",
         empty: "No cached images yet. Generated images will appear here after caching.",
         loadMore: "Load more",
@@ -232,6 +217,7 @@ export const resources = {
         stats:
           "Pending {{pending}} · Running {{running}} · Success {{success}} · Failed {{error}}",
         total: "{{count}} total",
+        showingRecent: "Showing the latest {{shown}} tasks. {{hidden}} older tasks are hidden; generated images stay in the Image Library.",
         empty: "No tasks yet. Enter a prompt and generate your first image.",
 
         elapsed: "Elapsed: {{value}}",
@@ -252,6 +238,10 @@ export const resources = {
           inputImages: "Input images",
           detail: "Detail",
           cost: "Est. cost",
+          costUnknown: "No pricing data for this model",
+          tokens: "Tokens",
+          tokensIn: "In",
+          tokensOut: "Out",
 
         },
         status: {
@@ -262,7 +252,6 @@ export const resources = {
           cancelled: "cancelled",
         },
         actions: {
-          preview: "Preview",
           download: "Download",
           copyImageUrl: "Copy image URL",
           copyOutput: "Copy text",
@@ -272,10 +261,19 @@ export const resources = {
           deleteImageCache: "Delete image cache",
 
           reuseParams: "Reuse params",
+          editImage: "Edit image",
           retry: "Retry",
           cancel: "Cancel",
           delete: "Delete",
           more: "More",
+        },
+        group: {
+          progress: "{{done}}/{{total}} done",
+          edit: "edit",
+          copyDebug: "Copy debug",
+          retryFailed: "Retry failed ({{count}})",
+          cancelAll: "Cancel all",
+          deleteAll: "Delete group",
         },
         cache: {
           title: "Image cache",
@@ -301,9 +299,13 @@ export const resources = {
           visionInputsDropped:
             "Vision images were released from memory. Please re-upload to retry this analysis.",
 
+          inputImageInvalid: "Invalid input image: {{reason}}",
+          maskMismatch:
+            "Mask dimensions do not match the first image. They must be identical.",
           paramsApplied: "Parameters applied.",
           paramsAppliedInputsLost:
             "Parameters applied. Reference images are no longer available — please re-upload if needed.",
+          editImageLoaded: "Image loaded for editing. Describe the change and submit.",
         },
 
       },
@@ -311,15 +313,23 @@ export const resources = {
         closePreview: "Close preview",
         close: "Close",
         alt: "Preview",
+        previous: "Previous image",
+        next: "Next image",
       },
-      canvas: {
-        title: "Canvas",
-        empty: {
-          title: "The canvas is empty",
-          hint: "Generated images appear here in real time — preview, download, or reuse their params.",
-        },
+      maskEditor: {
+        title: "Paint mask (inpainting)",
+        hint: "Paint over the area to redraw; everything else is kept. The mask applies to the first reference image. Supported by gpt-image-1 / dall-e-2; other models may ignore it.",
+        brush: "Brush",
+        eraser: "Eraser",
+        brushSize: "Size {{size}}px",
+        canvasLabel: "Mask painting area",
+        clear: "Clear",
+        cancel: "Cancel",
+        apply: "Apply mask",
       },
       notice: {
+        cors:
+          "If the same request works in curl/Postman but fails in browser, it is likely a CORS issue.",
       },
       errors: {
         unknown: "Unknown error.",
@@ -331,11 +341,6 @@ export const resources = {
         visionModelRequired: "Vision model is required.",
         promptRequired: "Prompt is required.",
         visionImageRequired: "At least one image is required for vision analysis.",
-        rateLimited: "Rate limited (429). Too many requests — wait a moment or reduce concurrency.",
-        unauthorized: "Authentication failed (401/403). Check that your API key is valid and has access to this model.",
-        notFound: "Not found (404). Check your Base URL and model name.",
-        serverError: "Server error (5xx). The upstream service is temporarily unavailable — try again later.",
-        network: "Network request failed. Check your network, Base URL, and CORS settings.",
 
         apiKeyRequiredToFetchModels: "API Key is required to fetch models.",
         apiBaseUrlRequiredToFetchModels: "API Base URL is required to fetch models.",
@@ -345,16 +350,14 @@ export const resources = {
       },
       batch: {
         title: "Batch Generation",
-        subtitle: "Run a whole batch from one prompt list: shared params, retry failures, export a ZIP when done.",
+        subtitle: "Drive a batch from a plain prompt list. One prompt per line. `#` lines and blank lines are skipped.",
         prompts: {
           title: "Prompt list",
           hint: "One prompt per line. Lines starting with `#` are treated as comments. Blank lines are skipped.",
           placeholder: "# Knight series\na heavily armored knight on a cliff at sunset\na young female mage casting a fire spell\n\n# Wizard series\nan old wizard with a crystal staff in a library",
           importButton: "Import .txt / .md / .csv",
           clearButton: "Clear",
-          parsedCount: "{{count}} prompt(s) parsed",
-          parsedComments: "{{comments}} comment line(s) skipped",
-          parsedEmpty: "{{empty}} blank line(s) skipped",
+          parsedSummary: "{{count}} prompt(s) parsed · {{comments}} comment line(s), {{empty}} blank line(s) skipped.",
           importFailed: "Failed to import: {{reason}}",
         },
         inputImages: {
@@ -368,16 +371,14 @@ export const resources = {
         },
         size: "Size (width x height)",
         countPerPrompt: "Repeat per prompt",
-        countPerPromptHint: "How many images to generate per prompt.",
+        countPerPromptHint: "How many images to generate per prompt (e.g. 3 to get seed variants).",
         advancedJsonParams: "Advanced JSON Params (shared)",
         submitSummary: "{{prompts}} prompt(s) × {{count}} = {{total}} task(s) will be queued.",
         startGenerate: "Start batch generation",
         startEdit: "Start batch edit",
         progress: {
           title: "Current batch",
-          donePart: "{{done}}/{{total}} done",
-          runningPart: "{{running}} running",
-          errorPart: "{{error}} failed",
+          summary: "{{done}}/{{total}} done · {{running}} running · {{error}} failed",
           tasksHint: "Detailed task cards are shown in the Tasks panel below.",
         },
         actions: {
@@ -427,26 +428,15 @@ export const resources = {
         badge: "纯浏览器 BYOK",
         title: "OpenAI 图片 WebUI",
         subtitle: "面向 OpenAI 兼容 API 的纯前端 BYOK 图片生成工具。",
-        openMenu: "打开菜单",
-        status: {
-          connected: "已连接",
-          notConnected: "未连接",
-        },
-      },
-      common: {
-        close: "关闭",
-      },
-      headerExtras: {
-        clearTasks: "清空全部任务",
-        clearTasksConfirm: "将删除本浏览器中的全部任务历史。已保存到图片库的生成图不受影响。",
+        github: "GitHub",
+        clearTasks: "清空任务",
+        clearTasksConfirm: "清空任务列表？正在运行的任务会被取消，已保存的图片仍保留在图库中。",
       },
       settings: {
         title: "API 设置",
-        language: "语言",
         subtitle: "填写你自己的接口地址和密钥。",
         reset: "重置",
         edit: "编辑",
-        migrationFailed: "存储迁移失败——旧数据未能导入，你的原有数据仍保留在原处。",
         fold: "收起",
         providerPresets: "服务商预设",
         presetsNote: "预设只会填充 Base URL、模型和响应格式，你仍然需要使用自己的 API Key。",
@@ -492,8 +482,12 @@ export const resources = {
         imageCount: "图片数量",
         size: "尺寸（宽 x 高）",
         sizePlaceholder: "例如：1024x1536",
+        resolutionSlider: "直接调节分辨率",
         widthPixels: "宽度（px）",
         heightPixels: "高度（px）",
+        currentSize: "当前尺寸：{{size}}",
+        currentRatioAuto: "自动比例：{{ratio}}",
+        sizeStepHint: "滑条步进：{{step}}px。",
         sizeCompatibility: {
           free: "自由 WxH 模式：按所选尺寸直接发送，适合各种 OpenAI 兼容中转模型。",
           openaiFixed: "OpenAI 固定尺寸模式：提交时会自动映射到最接近的官方支持尺寸，避免接口拒绝。",
@@ -501,11 +495,12 @@ export const resources = {
           geminiAspect: "Nano Banana / Gemini 模式：提交时会发送最接近的 aspect_ratio，并在提示词末尾追加 --ar 保底；同时保留 size 以兼容 OpenAI 中转。",
         },
         commonSizes: "兼容尺寸",
-        customSize: "自定义尺寸",
+        sizeMoreOptions: "更多尺寸选项",
         commonSizesHint: "按比例分组；模型有固定规则时，提交会自动规范到最近的支持项。",
         recentSizes: "最近使用",
 
         recentSizesEmpty: "还没有最近使用的尺寸。你可以先点一个预设，或手动输入。",
+        recommendedSize: "建议尺寸：{{size}}",
         refImageSize: "参考图原始分辨率",
         refImageSizeHint: "使用参考图的原始分辨率，精确修图。",
         quality: {
@@ -516,17 +511,19 @@ export const resources = {
         advancedJsonParams: "高级 JSON 参数",
         generate: "开始生成",
         edit: "开始编辑",
-        disabledHint: "输入提示词后即可开始生成。",
         inputImages: {
           title: "输入图片（可选）",
-          hint: "添加参考图即可编辑——保留原图场景，只修改你描述的部分。",
+          hint: "上传图片后会自动切换为编辑模式（调用 /images/edits）。",
           addButton: "添加图片",
           addMaskButton: "添加 Mask",
+          paintMaskButton: "🖌 涂抹蒙版",
+          editMaskButton: "🖌 编辑蒙版",
           mask: "Mask（可选）",
           maskHint: "尺寸必须与首张图一致，透明区域会被编辑。",
           remove: "移除",
           size: "{{width}}×{{height}}",
           editModeBadge: "当前：编辑模式",
+          dropHere: "拖拽图片到此处",
           multipleImagesWarning:
             "当前模型可能不支持多参考图，实际只有第一张会被使用。",
         },
@@ -540,14 +537,10 @@ export const resources = {
         prompt: "识图提示词",
         promptPlaceholder: "请用中文详细描述这张图片的内容：画面中有什么、表达了什么意思、关键信息是什么。",
         detail: "识图细节级别",
-        detailHint: "需要细节时建议选「高细节」；「自动」会让模型自己判断，通常更省。",
-        detailAuto: "自动（模型判断）",
-        detailHigh: "高细节",
-        detailLow: "低细节",
+        detailHint: "需要细节时建议 high；auto 会让模型自己判断，通常更省。",
         advancedJsonParams: "高级 JSON 参数",
         modelHint: "当前识图模型：{{model}}。如果你的端点使用其他视觉模型，请在 API 设置里修改。",
         analyze: "开始识图",
-        disabledHint: "添加至少一张图片后即可开始识图。",
         inputImages: {
           title: "待识别图片",
           hint: "支持 PNG、JPEG、WebP。图片只保存在内存中，并直接发送到你配置的端点。",
@@ -569,7 +562,6 @@ export const resources = {
           "生成的图片缓存失败。本次会话仍可查看，但刷新后会丢失。建议清理图片缓存后重试。",
         imageCacheEvictionFailed:
           "无法读取图片缓存占用大小，本次会话的缓存可能不稳定。",
-        migrationFailed: "存储迁移失败——旧数据原样保留在 localStorage 中，下次启动会自动重试。",
       },
 
       workspace: {
@@ -593,7 +585,7 @@ export const resources = {
       },
       library: {
         title: "图片库",
-        subtitle: "你生成的每一张图都保存在本地浏览器中，可随时浏览、下载或复用。",
+        subtitle: "从浏览器本地存储浏览历史生成图，不再把任务队列无限拉长。",
         loading: "加载中...",
         empty: "还没有缓存图片。生成成功并缓存后会显示在这里。",
         loadMore: "加载更多",
@@ -627,6 +619,7 @@ export const resources = {
 
         stats: "待处理 {{pending}} · 运行中 {{running}} · 成功 {{success}} · 失败 {{error}}",
         total: "共 {{count}} 个",
+        showingRecent: "当前只显示最近 {{shown}} 个任务，已隐藏 {{hidden}} 个更早任务；生成图片仍保留在图片库。",
         empty: "还没有任务。输入提示词并生成第一张图片。",
 
         elapsed: "耗时：{{value}}",
@@ -647,6 +640,10 @@ export const resources = {
           inputImages: "输入图片",
           detail: "细节级别",
           cost: "预估费用",
+          costUnknown: "暂无该模型的定价数据",
+          tokens: "Token 用量",
+          tokensIn: "输入",
+          tokensOut: "输出",
 
         },
         status: {
@@ -657,7 +654,6 @@ export const resources = {
           cancelled: "已取消",
         },
         actions: {
-          preview: "预览",
           download: "下载",
           copyImageUrl: "复制图片 URL",
           copyOutput: "复制文字结果",
@@ -667,10 +663,19 @@ export const resources = {
           deleteImageCache: "删除图片缓存",
 
           reuseParams: "使用此参数",
+          editImage: "编辑此图",
           retry: "重试",
           cancel: "取消",
           delete: "删除",
           more: "更多",
+        },
+        group: {
+          progress: "已完成 {{done}}/{{total}}",
+          edit: "编辑",
+          copyDebug: "复制调试",
+          retryFailed: "重试失败项（{{count}}）",
+          cancelAll: "全部取消",
+          deleteAll: "删除整组",
         },
         cache: {
           title: "图片缓存",
@@ -694,9 +699,12 @@ export const resources = {
           editInputsDropped: "输入图片已从内存释放，请重新上传后再重试编辑任务。",
           visionInputsDropped: "识图图片已从内存释放，请重新上传后再重试识图任务。",
 
+          inputImageInvalid: "输入图片不合法：{{reason}}",
+          maskMismatch: "Mask 尺寸与首张图不一致，两者尺寸必须完全相同。",
           paramsApplied: "参数已填入。",
           paramsAppliedInputsLost:
             "参数已填入。参考图片已失效，如需编辑模式请重新上传。",
+          editImageLoaded: "已载入为编辑底图，写下修改要求后提交即可。",
         },
 
       },
@@ -704,15 +712,22 @@ export const resources = {
         closePreview: "关闭预览",
         close: "关闭",
         alt: "预览",
+        previous: "上一张",
+        next: "下一张",
       },
-      canvas: {
-        title: "画布",
-        empty: {
-          title: "画布还是空的",
-          hint: "生成的图片会实时出现在这里，可预览、下载或复用参数。",
-        },
+      maskEditor: {
+        title: "涂抹蒙版（局部重绘）",
+        hint: "涂抹需要重绘的区域，其余部分保持不变。蒙版作用于第一张参考图；gpt-image-1 / dall-e-2 支持，其他模型可能会忽略。",
+        brush: "画笔",
+        eraser: "橡皮",
+        brushSize: "粗细 {{size}}px",
+        canvasLabel: "蒙版涂抹区域",
+        clear: "清空",
+        cancel: "取消",
+        apply: "应用蒙版",
       },
       notice: {
+        cors: "如果同一个请求在 curl/Postman 中可用但在浏览器中失败，通常是 CORS 问题。",
       },
       errors: {
         unknown: "未知错误。",
@@ -723,11 +738,6 @@ export const resources = {
         visionModelRequired: "请填写识图模型。",
         promptRequired: "请填写提示词。",
         visionImageRequired: "请至少上传一张用于识图的图片。",
-        rateLimited: "请求过于频繁（429）。已触发限流，请稍后再试或降低并发数量。",
-        unauthorized: "认证失败（401/403）。请检查 API Key 是否有效、是否有该模型的访问权限。",
-        notFound: "接口不存在（404）。请检查 Base URL 与模型名称是否正确。",
-        serverError: "服务端错误（5xx）。上游服务暂时不可用，请稍后重试。",
-        network: "网络请求失败。请检查网络、Base URL 与 CORS 设置。",
 
         apiKeyRequiredToFetchModels: "获取模型前请先填写 API Key。",
         apiBaseUrlRequiredToFetchModels: "获取模型前请先填写 API Base URL。",
@@ -737,16 +747,14 @@ export const resources = {
       },
       batch: {
         title: "批量生图",
-        subtitle: "一份 prompt 列表跑出整批任务：参数共享、失败可重跑、完成后可打包下载。",
+        subtitle: "用一份纯文本 prompt 列表驱动批量任务。一行一条，# 开头视为注释、空行跳过。",
         prompts: {
           title: "Prompt 列表",
           hint: "一行一条 prompt。# 开头的行视为注释。空行会被跳过。",
           placeholder: "# 战士系列\na heavily armored knight on a cliff at sunset\na young female mage casting a fire spell\n\n# 法师系列\nan old wizard with a crystal staff in a library",
           importButton: "导入 .txt / .md / .csv",
           clearButton: "清空",
-          parsedCount: "已解析 {{count}} 条 prompt",
-          parsedComments: "跳过 {{comments}} 行注释",
-          parsedEmpty: "跳过 {{empty}} 行空行",
+          parsedSummary: "已解析 {{count}} 条 prompt · 跳过 {{comments}} 行注释、{{empty}} 行空行。",
           importFailed: "导入失败：{{reason}}",
         },
         inputImages: {
@@ -759,16 +767,14 @@ export const resources = {
         },
         size: "尺寸（宽 x 高）",
         countPerPrompt: "每条 prompt 重复次数",
-        countPerPromptHint: "每条 prompt 生成几张图（例如填 3 即每条 prompt 生成 3 张图）。",
+        countPerPromptHint: "每条 prompt 生成几张图（例如填 3 可拿不同 seed 的变体）。",
         advancedJsonParams: "高级 JSON 参数（共享）",
         submitSummary: "将创建 {{prompts}} 条 prompt × {{count}} = {{total}} 个任务。",
         startGenerate: "开始批量生成",
         startEdit: "开始批量图生图",
         progress: {
           title: "当前批次",
-          donePart: "{{done}}/{{total}} 完成",
-          runningPart: "{{running}} 运行中",
-          errorPart: "{{error}} 失败",
+          summary: "{{done}}/{{total}} 完成 · {{running}} 运行中 · {{error}} 失败",
           tasksHint: "详细任务卡片请到下方任务面板查看。",
         },
         actions: {

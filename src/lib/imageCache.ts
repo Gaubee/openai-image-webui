@@ -20,12 +20,24 @@ export interface CachedImageMetadata {
   generationSize?: string;
   responseFormat?: ImageResponseFormat;
   taskCreatedAt?: number;
+  extraParams?: Record<string, unknown>;
+  /** Reference images / mask of an edit, so "reuse params" can restore them. */
+  inputImages?: File[];
+  inputMask?: File | null;
+  /**
+   * Tasks from the same submission share one set of inputs; only the first
+   * stores them, the rest point at it here.
+   * ponytail: if that owner record is deleted/evicted, siblings lose their
+   * inputs too. Upgrade path is a content-addressed inputs store.
+   */
+  inputsFromId?: string;
 }
 
 export interface CachedImageRecord extends CachedImageMetadata {
   id: string;
   blob: Blob;
   mimeType: string;
+  /** Total bytes stored for this record, output image plus inputs. */
   size: number;
   cachedAt: number;
 }
@@ -180,12 +192,26 @@ export async function cacheImageFromUrl(
     id,
     blob,
     mimeType: blob.type || existing?.mimeType || "image/png",
-    size: blob.size,
+    size: 0,
     cachedAt: Date.now(),
   };
+  record.size = [blob, ...(record.inputImages ?? []), record.inputMask].reduce(
+    (total, part) => total + (part?.size ?? 0),
+    0,
+  );
 
   await saveCachedImage(record);
   return record;
+}
+
+/** Reference images / mask stored alongside a cached result, if any. */
+export async function getCachedInputs(id: string) {
+  const record = await getCachedImage(id);
+  const source = record?.inputsFromId ? await getCachedImage(record.inputsFromId) : record;
+
+  return source?.inputImages?.length
+    ? { images: source.inputImages, mask: source.inputMask ?? null }
+    : null;
 }
 
 function putRecord(record: CachedImageRecord) {

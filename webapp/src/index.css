@@ -1,0 +1,146 @@
+@import "tailwindcss";
+
+@theme {
+  /* Surface levels: blue-gray tonal ladder (5 steps, 6-8% lightness increments) */
+  --color-surface-0: hsl(217, 24%, 6%);
+  --color-surface-1: hsl(217, 22%, 12%);
+  --color-surface-2: hsl(217, 20%, 18%);
+  --color-surface-3: hsl(216, 18%, 24%);
+  --color-surface-4: hsl(216, 16%, 30%);
+
+  /* Text colors */
+  --color-text-primary: hsl(215, 10%, 92%);
+  --color-text-secondary: hsl(215, 8%, 65%);
+  --color-text-tertiary: hsl(215, 6%, 45%);
+
+  /* Accent: warm amber, high saturation */
+  --color-accent: hsl(38, 85%, 60%);
+  --color-accent-dim: hsl(38, 70%, 45%);
+
+  /* Semantic colors */
+  --color-success: hsl(145, 60%, 50%);
+  --color-error: hsl(0, 70%, 55%);
+  --color-warning: hsl(38, 85%, 60%);
+
+  /* Typography */
+  --font-sans: "Inter Variable", Inter, system-ui, -apple-system, sans-serif;
+  --font-mono: "SF Mono", Menlo, Monaco, monospace;
+
+  /* Shadows (reserved for elevated panels, subtle) */
+  --shadow-soft: 0 20px 70px -28px rgba(0, 0, 0, 0.5);
+}
+
+:root {
+  color-scheme: dark;
+  font-family: var(--font-sans);
+  background-color: var(--color-surface-0);
+  color: var(--color-text-primary);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  line-height: 1.5;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+/* Fluid type scale */
+h1, .text-display {
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+h2, .text-heading {
+  font-size: clamp(1.25rem, 2.5vw, 1.5rem);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+body, .text-body {
+  font-size: clamp(0.9375rem, 1.5vw, 1rem);
+  line-height: 1.5;
+}
+
+.text-detail, small {
+  font-size: clamp(0.8125rem, 1.25vw, 0.875rem);
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+}
+
+.text-mono, code, pre {
+  font-family: var(--font-mono);
+  font-size: clamp(0.8125rem, 1.25vw, 0.875rem);
+}
+
+/*
+ * Intent: brushed-aluminum material layer (2026-10-06 R12 final polish)
+ * Hairline horizontal grain + matte micro-speckle at near-invisible contrast,
+ * plus a 1px top bevel highlight — the "matte brushed aluminum" identity the
+ * critics said was unreadable. Apply .brushed to panel containers only.
+ */
+.brushed {
+  background-image:
+    repeating-linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.014) 0px,
+      rgba(255, 255, 255, 0.014) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    radial-gradient(rgba(255, 255, 255, 0.016) 1px, transparent 1.4px);
+  background-size: auto, 3px 3px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Utility: hide scrollbar (mobile nav) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/*
+ * Intent: dark scrollbars + mobile input polish (2026-10-06 R10)
+ * The app is a forced-dark theme; native light scrollbars broke the frame
+ * (R9 critic P2). Textareas drop their resize handle on touch layouts.
+ */
+* {
+  scrollbar-color: var(--color-surface-4) transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-4);
+  border: 3px solid transparent;
+  border-radius: 8px;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-surface-3);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+@media (max-width: 640px) {
+  textarea {
+    resize: none;
+  }
+}

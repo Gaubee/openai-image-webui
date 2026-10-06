@@ -5,11 +5,15 @@
   "private": false,
   "type": "module",
   "scripts": {
-    "dev": "portless openai-image-webui vite",
-    "build": "tsc && vite build",
+    "dev": "concurrently -n upstream,webapp -c yellow,cyan \"portless openai-image-webui vite\" \"portless openai-image-webui-webapp vite --config vite.webapp.config.ts\"",
+    "build": "tsc && vite build && vite build --config vite.webapp.config.ts --outDir dist/webapp",
     "preview": "vite preview",
     "predeploy": "pnpm run build",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages -d dist",
+    "dev:upstream": "portless openai-image-webui vite",
+    "dev:webapp": "portless openai-image-webui-webapp vite --config vite.webapp.config.ts",
+    "build:upstream": "tsc && vite build",
+    "build:webapp": "tsc && vite build --config vite.webapp.config.ts --outDir dist/webapp"
   },
   "keywords": [
     "openai",
@@ -40,6 +44,7 @@
     "@types/react-dom": "^19.0.2",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^10.0.5",
     "gh-pages": "^6.2.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^4.0.0",

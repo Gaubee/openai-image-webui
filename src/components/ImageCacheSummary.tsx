@@ -1,8 +1,3 @@
-/*
- * Intent: image-cache stats card with clear action (2026-10-05)
- * Original requirement: surface cache size and eviction control in the library
- */
-
 import { useTranslation } from "react-i18next";
 import type { ImageCacheStats } from "../types";
 
@@ -38,13 +33,13 @@ export function ImageCacheSummary({ stats, onClear }: ImageCacheSummaryProps) {
 
   return (
     <div
-      className={`brushed rounded border px-4 py-3 text-sm ${
-        stats.overWarning ? "border-accent/40 bg-accent/10 text-accent" : "border-surface-3 bg-surface-2 text-text-secondary"
+      className={`rounded-2xl border px-4 py-3 text-sm ${
+        stats.overWarning ? "border-amber-200 bg-amber-50 text-amber-800" : "border-slate-200 bg-slate-50 text-slate-600"
       }`}
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <div className="font-medium text-text-primary">{t("tasks.cache.title")}</div>
+        <div>
+          <div className="font-medium text-slate-800">{t("tasks.cache.title")}</div>
           <div className="mt-1 text-xs">
             {t("tasks.cache.summary", {
               count: stats.count,
@@ -55,7 +50,7 @@ export function ImageCacheSummary({ stats, onClear }: ImageCacheSummaryProps) {
         </div>
         <button
           type="button"
-          className="shrink-0 self-start rounded border border-error/30 bg-surface-1 px-3 py-1.5 text-xs font-medium text-error transition-colors hover:bg-error/10 disabled:cursor-not-allowed disabled:border-surface-3 disabled:bg-surface-1 disabled:text-text-tertiary disabled:opacity-50"
+          className="self-start rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
           disabled={stats.count <= 0}
           onClick={handleClear}
         >

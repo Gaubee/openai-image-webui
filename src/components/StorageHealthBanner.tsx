@@ -22,7 +22,7 @@ export const StorageHealthBanner = memo(function StorageHealthBanner() {
   }
 
   return (
-    <div className="mb-4 rounded border border-accent/40 bg-accent/10 p-4 text-sm text-accent">
+    <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 shadow-soft">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="font-semibold">{t("storageHealth.title")}</p>
@@ -31,14 +31,14 @@ export const StorageHealthBanner = memo(function StorageHealthBanner() {
               <li key={issue.kind}>
                 {t(`storageHealth.${issue.kind}`)}
                 {issue.detail ? (
-                  <span className="ml-1 text-xs text-text-tertiary">({issue.detail})</span>
+                  <span className="ml-1 text-xs text-amber-700">({issue.detail})</span>
                 ) : null}
               </li>
             ))}
           </ul>
         </div>
         <button
-          className="shrink-0 rounded border border-accent/40 bg-surface-1 px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-surface-2"
+          className="shrink-0 rounded-xl border border-amber-400 bg-white px-3 py-1.5 text-xs font-medium text-amber-900 transition hover:bg-amber-100"
           type="button"
           onClick={clearStorageIssues}
         >

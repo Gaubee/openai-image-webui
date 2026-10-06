@@ -1,0 +1,804 @@
+/*
+ * Intent: zh/en translation tree — single source of UI copy (2026-10-05)
+ * Original requirement: bilingual UI; keys must stay in parity across locales
+ */
+
+export const LANGUAGE_STORAGE_KEY = "openai-image-webui:language";
+
+export const SUPPORTED_LANGUAGES = ["en", "zh-CN"] as const;
+
+export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
+
+export const resources = {
+  en: {
+    translation: {
+      meta: {
+        title: "OpenAI Image WebUI",
+        description:
+          "A pure frontend image generation WebUI for OpenAI-compatible Images APIs. Bring your own API key and endpoint.",
+      },
+      language: {
+        label: "Language",
+        options: {
+          en: "English",
+          "zh-CN": "简体中文",
+        },
+      },
+      header: {
+        badge: "Browser-only BYOK",
+        title: "OpenAI Image WebUI",
+        subtitle: "Pure frontend BYOK image generation for OpenAI-compatible APIs.",
+        openMenu: "Open menu",
+        status: {
+          connected: "Connected",
+          notConnected: "Not connected",
+        },
+      },
+      common: {
+        close: "Close",
+      },
+      headerExtras: {
+        clearTasks: "Clear all tasks",
+        clearTasksConfirm: "Delete all task history from this browser? Generated images already saved to the library are kept.",
+      },
+      settings: {
+        title: "API Settings",
+        language: "Language",
+        subtitle: "Bring your own endpoint and key.",
+        reset: "Reset",
+        edit: "Edit",
+        migrationFailed: "Storage migration failed — recent localStorage data could not be imported. Your old data is still intact.",
+        fold: "Fold",
+        providerPresets: "Provider Presets",
+        presetsNote:
+          "Presets only fill the base URL, model, and response format. You still need to use your own API key.",
+        apiBaseUrl: "API Base URL",
+        apiKey: "API Key",
+        model: "Image model",
+        visionModel: "Vision model",
+        visionModelHint: "Used by the Vision panel. It should be a multimodal model that supports image input through /responses.",
+        responseFormat: "Response Format",
+
+        concurrency: "Concurrency",
+        apiKeyNotice: "Your API key is stored only in this browser.",
+        presets: {
+          openai: {
+            description: "Official Images API",
+          },
+          laozhang: {
+            description: "OpenAI-compatible relay (global)",
+          },
+          laozhangVip: {
+            description: "Backup endpoint for overseas servers",
+          },
+        },
+        models: {
+          fetching: "Fetching…",
+          fetchModels: "Fetch models",
+          loaded:
+            "Loaded {{total}} models ({{image}} image, {{shown}} shown). Models are grouped as image/non-image; you can still type any name manually.",
+          idle:
+            "For relay providers, click Fetch models to load the live list, or just type any model name.",
+          optionWithOwner: "{{category}} · {{owner}}",
+          filters: {
+            image: "Image",
+            "non-image": "Non-image",
+            all: "All models",
+          },
+        },
+      },
+      generation: {
+        title: "Generate Images",
+        subtitle: "Create queued image tasks from one prompt.",
+        prompt: "Prompt",
+        promptPlaceholder: "A cute cat wearing sunglasses, cinematic lighting",
+        imageCount: "Image Count",
+        size: "Size (width x height)",
+        sizePlaceholder: "For example: 1024x1536",
+        widthPixels: "Width (px)",
+        heightPixels: "Height (px)",
+        sizeCompatibility: {
+          free: "Free WxH mode: the selected size is sent as-is for OpenAI-compatible relay models.",
+          openaiFixed: "OpenAI fixed-size mode: requests are automatically mapped to the closest supported size to avoid API rejection.",
+          gptImage2: "GPT Image 2 mode: requests are normalized to 16px multiples and capped to the supported aspect-ratio range.",
+          geminiAspect: "Nano Banana / Gemini mode: the closest supported aspect ratio is sent as aspect_ratio and appended to the prompt as --ar for fallback; size is kept for OpenAI-compatible relays.",
+        },
+        commonSizes: "Compatible sizes",
+        customSize: "Custom size",
+        commonSizesHint: "Grouped by aspect ratio. For model-specific APIs, submission may normalize to the nearest supported option.",
+        recentSizes: "Recent sizes",
+        recentSizesEmpty: "No recent sizes yet. Pick a preset or enter one manually.",
+        refImageSize: "Reference image resolution",
+        refImageSizeHint: "Use this image's native resolution for pixel-perfect editing.",
+
+        quality: {
+          "1k": "1K",
+          "2k": "2K",
+          "4k": "4K",
+        },
+        advancedJsonParams: "Advanced JSON Params",
+        generate: "Generate",
+        edit: "Edit",
+        disabledHint: "Enter a prompt above to start generating.",
+        inputImages: {
+          title: "Input images (optional)",
+          hint: "Add a reference image to edit it — keep the original scene and change only what you describe.",
+          addButton: "Add image",
+          addMaskButton: "Add mask",
+          mask: "Mask (optional)",
+          maskHint: "Same size as the first image. Transparent areas are editable.",
+          remove: "Remove",
+          size: "{{width}}×{{height}}",
+          editModeBadge: "Edit mode",
+          multipleImagesWarning:
+            "The selected model may not support multiple reference images; only the first one could be honoured.",
+        },
+      },
+
+      vision: {
+        title: "Understand Images",
+        subtitle: "Upload images and ask a vision model to describe what they show, extract meaning, and read any text.",
+        defaultPrompt:
+          "Describe this image in detail: what is shown, what it conveys, and what the key information is. If there is any text in the image, extract it as well.",
+        prompt: "Vision Prompt",
+        promptPlaceholder: "Describe this image in detail: what is shown, what it means, and any text present.",
+        detail: "Vision detail",
+        detailHint: "Choose “High detail” when fine details matter; “Auto” lets the model decide and is usually cheaper.",
+        detailAuto: "Auto (model decides)",
+        detailHigh: "High detail",
+        detailLow: "Low detail",
+        advancedJsonParams: "Advanced JSON Params",
+        modelHint: "Current vision model: {{model}}. Change it in API Settings if your endpoint uses another vision model.",
+        analyze: "Analyze",
+        disabledHint: "Add at least one image to start analyzing.",
+        inputImages: {
+          title: "Images to analyze",
+          hint: "PNG, JPEG, and WebP are supported. Images stay in memory and are sent directly to your configured endpoint.",
+          addButton: "Add image",
+          remove: "Remove",
+          size: "{{width}}×{{height}}",
+          badge: "{{count}} image(s)",
+        },
+      },
+
+      storageHealth: {
+        title: "Local storage problem",
+        dismiss: "Dismiss",
+        taskQuotaExceeded:
+          "Browser storage is full, so image data was dropped from the saved history. Task records are still being saved. Clear the image cache or export what you need.",
+        settingsWriteFailed:
+          "Could not save settings. They will reset when you reload — check if your browser blocks storage for this site.",
+        imageCacheWriteFailed:
+          "Could not cache a generated image. It is still shown in this session, but will be lost after a reload. Try clearing the image cache.",
+        imageCacheEvictionFailed:
+          "Could not check the image cache size. Caching may be unreliable in this session.",
+        migrationFailed:
+          "Storage migration failed — your old localStorage data is untouched and will be retried next launch.",
+      },
+
+      workspace: {
+        tabs: {
+          tasks: "Tasks",
+
+          library: "Image Library",
+        },
+        modes: {
+          generate: "Generate",
+          vision: "Vision",
+          batch: "Batch",
+          rename: "Batch Rename",
+        },
+        modeDescriptions: {
+          generate: "Create images from a prompt",
+          vision: "Ask questions about images",
+          batch: "Run many prompts at once",
+          rename: "AI-rename local image files",
+        },
+      },
+      library: {
+        title: "Image Library",
+        subtitle: "Every image you generate is saved locally — browse, download, or reuse it anytime.",
+        loading: "Loading...",
+        empty: "No cached images yet. Generated images will appear here after caching.",
+        loadMore: "Load more",
+        newImages: "{{count}} new image(s) generated — click to refresh",
+        previewImage: "Preview image",
+        unknownPrompt: "Untitled image",
+        unknownModel: "Unknown model",
+        deleteConfirm: "Delete this cached image? This will remove it from the image library.",
+        selection: {
+          enter: "Select",
+          exit: "Done",
+          count: "{{count}} selected",
+          selectAll: "Select all loaded",
+          clear: "Clear",
+          downloadZip: "Download ZIP ({{count}})",
+          zipPacking: "Packing ZIP…",
+          hint: "Drag on empty area to box-select. Click to toggle. Shift+click for range. Drag to top/bottom edge to auto-scroll. Esc to cancel.",
+        },
+        messages: {
+          promptCopied: "Prompt copied.",
+          downloadStarted: "Download started.",
+          imageDeleted: "Cached image deleted.",
+          cacheCleared: "Image cache cleared.",
+          loadFailed: "Failed to load image library.",
+          zipDownloadStarted: "ZIP download started.",
+          zipFailed: "Failed to pack ZIP.",
+        },
+      },
+      tasks: {
+        title: "Tasks",
+
+        stats:
+          "Pending {{pending}} · Running {{running}} · Success {{success}} · Failed {{error}}",
+        total: "{{count}} total",
+        empty: "No tasks yet. Enter a prompt and generate your first image.",
+
+        elapsed: "Elapsed: {{value}}",
+        generating: "Generating...",
+        noImageYet: "No image yet",
+        noTextYet: "No text output yet",
+        analyzing: "Analyzing...",
+        restoringCachedImage: "Restoring cached image...",
+        previewGeneratedImage: "Preview generated image",
+        debugDetails: "Debug details",
+        outputText: "Vision output",
+
+
+        fields: {
+          model: "Model",
+          size: "Size",
+          format: "Format",
+          inputImages: "Input images",
+          detail: "Detail",
+          cost: "Est. cost",
+
+        },
+        status: {
+          pending: "pending",
+          running: "running",
+          success: "success",
+          error: "error",
+          cancelled: "cancelled",
+        },
+        actions: {
+          preview: "Preview",
+          download: "Download",
+          copyImageUrl: "Copy image URL",
+          copyOutput: "Copy text",
+          downloadText: "Download text",
+          copyPrompt: "Copy prompt",
+          copyDebug: "Copy debug JSON",
+          deleteImageCache: "Delete image cache",
+
+          reuseParams: "Reuse params",
+          retry: "Retry",
+          cancel: "Cancel",
+          delete: "Delete",
+          more: "More",
+        },
+        cache: {
+          title: "Image cache",
+          summary: "{{count}} images · {{size}}",
+          warning: "Cache is over 200 MB. Consider clearing old images.",
+          clear: "Clear cache",
+          clearConfirm: "Clear all cached images? Task records will stay, but images may disappear from history.",
+          cachedBadge: "cached",
+        },
+        messages: {
+
+          imageUrlCopied: "Image URL copied.",
+          outputCopied: "Extracted text copied.",
+          outputDownloadStarted: "Text download started.",
+          promptCopied: "Prompt copied.",
+          debugCopied: "Debug JSON copied.",
+          downloadStarted: "Download started.",
+          imageCacheDeleted: "Image cache deleted.",
+          taskCancelled: "Task cancelled.",
+          taskInterrupted: "Task was interrupted by page reload.",
+          editInputsDropped:
+            "Input images were released from memory. Please re-upload to retry this edit.",
+          visionInputsDropped:
+            "Vision images were released from memory. Please re-upload to retry this analysis.",
+
+          paramsApplied: "Parameters applied.",
+          paramsAppliedInputsLost:
+            "Parameters applied. Reference images are no longer available — please re-upload if needed.",
+        },
+
+      },
+      preview: {
+        closePreview: "Close preview",
+        close: "Close",
+        alt: "Preview",
+      },
+      canvas: {
+        title: "Canvas",
+        empty: {
+          title: "The canvas is empty",
+          hint: "Generated images appear here in real time — preview, download, or reuse their params.",
+        },
+      },
+      notice: {
+      },
+      errors: {
+        unknown: "Unknown error.",
+        requestFailed:
+          "Request failed. Please check your API key, base URL, model, network, or CORS settings.",
+        apiKeyRequired: "API Key is required.",
+        apiBaseUrlRequired: "API Base URL is required.",
+        modelRequired: "Model is required.",
+        visionModelRequired: "Vision model is required.",
+        promptRequired: "Prompt is required.",
+        visionImageRequired: "At least one image is required for vision analysis.",
+        rateLimited: "Rate limited (429). Too many requests — wait a moment or reduce concurrency.",
+        unauthorized: "Authentication failed (401/403). Check that your API key is valid and has access to this model.",
+        notFound: "Not found (404). Check your Base URL and model name.",
+        serverError: "Server error (5xx). The upstream service is temporarily unavailable — try again later.",
+        network: "Network request failed. Check your network, Base URL, and CORS settings.",
+
+        apiKeyRequiredToFetchModels: "API Key is required to fetch models.",
+        apiBaseUrlRequiredToFetchModels: "API Base URL is required to fetch models.",
+        advancedJsonInvalid: "Advanced JSON Params is not valid JSON.",
+        advancedJsonObject: "Advanced JSON Params must be a JSON object.",
+        batchPromptsRequired: "Add at least one prompt line (comments and blank lines are skipped).",
+      },
+      batch: {
+        title: "Batch Generation",
+        subtitle: "Run a whole batch from one prompt list: shared params, retry failures, export a ZIP when done.",
+        prompts: {
+          title: "Prompt list",
+          hint: "One prompt per line. Lines starting with `#` are treated as comments. Blank lines are skipped.",
+          placeholder: "# Knight series\na heavily armored knight on a cliff at sunset\na young female mage casting a fire spell\n\n# Wizard series\nan old wizard with a crystal staff in a library",
+          importButton: "Import .txt / .md / .csv",
+          clearButton: "Clear",
+          parsedCount: "{{count}} prompt(s) parsed",
+          parsedComments: "{{comments}} comment line(s) skipped",
+          parsedEmpty: "{{empty}} blank line(s) skipped",
+          importFailed: "Failed to import: {{reason}}",
+        },
+        inputImages: {
+          title: "Shared reference images (optional)",
+          hint: "When at least one image is provided, the batch runs as image edits. All prompts share the same references.",
+          addButton: "Add image",
+          remove: "Remove",
+          editModeBadge: "Edit mode",
+          multipleImagesWarning:
+            "The selected model may not support multiple reference images; only the first one may be used.",
+        },
+        size: "Size (width x height)",
+        countPerPrompt: "Repeat per prompt",
+        countPerPromptHint: "How many images to generate per prompt.",
+        advancedJsonParams: "Advanced JSON Params (shared)",
+        submitSummary: "{{prompts}} prompt(s) × {{count}} = {{total}} task(s) will be queued.",
+        startGenerate: "Start batch generation",
+        startEdit: "Start batch edit",
+        progress: {
+          title: "Current batch",
+          donePart: "{{done}}/{{total}} done",
+          runningPart: "{{running}} running",
+          errorPart: "{{error}} failed",
+          tasksHint: "Detailed task cards are shown in the Tasks panel below.",
+        },
+        actions: {
+          retryErrors: "Retry failed ({{count}})",
+          exportZip: "Download ZIP ({{count}})",
+          exporting: "Packing…",
+          exportDone: "Exported {{exported}} image(s){{missing, plural, =0 {} other { · {{missing}} missing}}}.",
+        },
+      },
+      batchRename: {
+        title: "Batch Rename",
+        subtitle: "AI-powered art asset renaming. Drag images, get smart names, download rename scripts.",
+        dropHint: "Drag & drop images here, or click to select",
+        formatHint: "Supports JPG, PNG, WebP, TGA, BMP",
+        namingMode: "Naming mode",
+        modeCompact: "🏷️ Compact",
+        modeDescriptive: "📝 Descriptive",
+        modeCompactHint: "e.g. rock_mossy_dark",
+        modeDescriptiveHint: "e.g. tree_pine_on_rock_leaning_left",
+        start: "🚀 Start Rename",
+        stop: "Stop",
+        downloadScript: "💾 Download Scripts (with undo)",
+        downloadZip: "📦 Download Renamed ZIP",
+        clear: "Clear All",
+        remove: "Remove",
+        statusPending: "pending",
+        statusProcessing: "analyzing…",
+        stats: "Total {{total}} · Done {{done}}",
+        settingsRequired: "Please configure API Key, Base URL, and Vision model in API Settings first.",
+      },
+    },
+  },
+  "zh-CN": {
+    translation: {
+      meta: {
+        title: "OpenAI 图片 WebUI",
+        description: "纯前端 OpenAI 兼容图片生成 WebUI，自带 API Key 和端点即可使用。",
+      },
+      language: {
+        label: "语言",
+        options: {
+          en: "English",
+          "zh-CN": "简体中文",
+        },
+      },
+      header: {
+        badge: "纯浏览器 BYOK",
+        title: "OpenAI 图片 WebUI",
+        subtitle: "面向 OpenAI 兼容 API 的纯前端 BYOK 图片生成工具。",
+        openMenu: "打开菜单",
+        status: {
+          connected: "已连接",
+          notConnected: "未连接",
+        },
+      },
+      common: {
+        close: "关闭",
+      },
+      headerExtras: {
+        clearTasks: "清空全部任务",
+        clearTasksConfirm: "将删除本浏览器中的全部任务历史。已保存到图片库的生成图不受影响。",
+      },
+      settings: {
+        title: "API 设置",
+        language: "语言",
+        subtitle: "填写你自己的接口地址和密钥。",
+        reset: "重置",
+        edit: "编辑",
+        migrationFailed: "存储迁移失败——旧数据未能导入，你的原有数据仍保留在原处。",
+        fold: "收起",
+        providerPresets: "服务商预设",
+        presetsNote: "预设只会填充 Base URL、模型和响应格式，你仍然需要使用自己的 API Key。",
+        apiBaseUrl: "API Base URL",
+        apiKey: "API Key",
+        model: "图片模型",
+        visionModel: "识图模型",
+        visionModelHint: "识图面板使用这个模型，需要是支持图片输入的多模态模型（通过 /responses）。",
+        responseFormat: "响应格式",
+
+        concurrency: "并发数",
+        apiKeyNotice: "你的 API Key 只会保存在当前浏览器中。",
+        presets: {
+          openai: {
+            description: "官方 Images API",
+          },
+          laozhang: {
+            description: "OpenAI 兼容中转（全球）",
+          },
+          laozhangVip: {
+            description: "海外服务器备用端点",
+          },
+        },
+        models: {
+          fetching: "获取中…",
+          fetchModels: "获取模型",
+          loaded:
+            "已加载 {{total}} 个模型（{{image}} 个 image，当前显示 {{shown}} 个）。模型仅按 image / 非image 粗分，你仍然可以手动输入任意模型名。",
+          idle: "中转服务商可点击获取模型加载实时列表，也可以直接输入任意模型名。",
+          optionWithOwner: "{{category}} · {{owner}}",
+          filters: {
+            image: "image",
+            "non-image": "非image",
+            all: "全部模型",
+          },
+        },
+      },
+      generation: {
+        title: "生成图片",
+        subtitle: "用一条提示词创建队列化图片任务。",
+        prompt: "提示词",
+        promptPlaceholder: "一只戴墨镜的可爱猫，电影感光照",
+        imageCount: "图片数量",
+        size: "尺寸（宽 x 高）",
+        sizePlaceholder: "例如：1024x1536",
+        widthPixels: "宽度（px）",
+        heightPixels: "高度（px）",
+        sizeCompatibility: {
+          free: "自由 WxH 模式：按所选尺寸直接发送，适合各种 OpenAI 兼容中转模型。",
+          openaiFixed: "OpenAI 固定尺寸模式：提交时会自动映射到最接近的官方支持尺寸，避免接口拒绝。",
+          gptImage2: "GPT Image 2 模式：提交时会规范到 16px 倍数，并限制到模型支持的宽高比范围。",
+          geminiAspect: "Nano Banana / Gemini 模式：提交时会发送最接近的 aspect_ratio，并在提示词末尾追加 --ar 保底；同时保留 size 以兼容 OpenAI 中转。",
+        },
+        commonSizes: "兼容尺寸",
+        customSize: "自定义尺寸",
+        commonSizesHint: "按比例分组；模型有固定规则时，提交会自动规范到最近的支持项。",
+        recentSizes: "最近使用",
+
+        recentSizesEmpty: "还没有最近使用的尺寸。你可以先点一个预设，或手动输入。",
+        refImageSize: "参考图原始分辨率",
+        refImageSizeHint: "使用参考图的原始分辨率，精确修图。",
+        quality: {
+          "1k": "1K",
+          "2k": "2K",
+          "4k": "4K",
+        },
+        advancedJsonParams: "高级 JSON 参数",
+        generate: "开始生成",
+        edit: "开始编辑",
+        disabledHint: "输入提示词后即可开始生成。",
+        inputImages: {
+          title: "输入图片（可选）",
+          hint: "添加参考图即可编辑——保留原图场景，只修改你描述的部分。",
+          addButton: "添加图片",
+          addMaskButton: "添加 Mask",
+          mask: "Mask（可选）",
+          maskHint: "尺寸必须与首张图一致，透明区域会被编辑。",
+          remove: "移除",
+          size: "{{width}}×{{height}}",
+          editModeBadge: "当前：编辑模式",
+          multipleImagesWarning:
+            "当前模型可能不支持多参考图，实际只有第一张会被使用。",
+        },
+      },
+
+      vision: {
+        title: "识图理解",
+        subtitle: "上传图片，让视觉模型描述画面内容、提取关键信息和文字。",
+        defaultPrompt:
+          "请用中文详细描述这张图片的内容：画面中有什么、表达了什么意思、关键信息是什么。如果图中有文字，也一并提取出来。",
+        prompt: "识图提示词",
+        promptPlaceholder: "请用中文详细描述这张图片的内容：画面中有什么、表达了什么意思、关键信息是什么。",
+        detail: "识图细节级别",
+        detailHint: "需要细节时建议选「高细节」；「自动」会让模型自己判断，通常更省。",
+        detailAuto: "自动（模型判断）",
+        detailHigh: "高细节",
+        detailLow: "低细节",
+        advancedJsonParams: "高级 JSON 参数",
+        modelHint: "当前识图模型：{{model}}。如果你的端点使用其他视觉模型，请在 API 设置里修改。",
+        analyze: "开始识图",
+        disabledHint: "添加至少一张图片后即可开始识图。",
+        inputImages: {
+          title: "待识别图片",
+          hint: "支持 PNG、JPEG、WebP。图片只保存在内存中，并直接发送到你配置的端点。",
+          addButton: "添加图片",
+          remove: "移除",
+          size: "{{width}}×{{height}}",
+          badge: "{{count}} 张图片",
+        },
+      },
+
+      storageHealth: {
+        title: "本地存储异常",
+        dismiss: "知道了",
+        taskQuotaExceeded:
+          "浏览器存储空间已满，已从保存的历史中丢弃图片数据。任务记录仍在正常保存。建议清理图片缓存或先导出需要的内容。",
+        settingsWriteFailed:
+          "设置保存失败，刷新后会恢复默认值。请检查浏览器是否禁止了本站点的存储权限。",
+        imageCacheWriteFailed:
+          "生成的图片缓存失败。本次会话仍可查看，但刷新后会丢失。建议清理图片缓存后重试。",
+        imageCacheEvictionFailed:
+          "无法读取图片缓存占用大小，本次会话的缓存可能不稳定。",
+        migrationFailed: "存储迁移失败——旧数据原样保留在 localStorage 中，下次启动会自动重试。",
+      },
+
+      workspace: {
+        tabs: {
+          tasks: "任务",
+
+          library: "图片库",
+        },
+        modes: {
+          generate: "生成图片",
+          vision: "识图",
+          batch: "批量",
+          rename: "批量重命名",
+        },
+        modeDescriptions: {
+          generate: "输入提示词生成图片",
+          vision: "上传图片并向模型提问",
+          batch: "一次提交多条提示词",
+          rename: "用 AI 批量重命名本地图片",
+        },
+      },
+      library: {
+        title: "图片库",
+        subtitle: "你生成的每一张图都保存在本地浏览器中，可随时浏览、下载或复用。",
+        loading: "加载中...",
+        empty: "还没有缓存图片。生成成功并缓存后会显示在这里。",
+        loadMore: "加载更多",
+        newImages: "新生成了 {{count}} 张图片，点击刷新",
+        previewImage: "预览图片",
+        unknownPrompt: "未命名图片",
+        unknownModel: "未知模型",
+        deleteConfirm: "确定删除这张缓存图片吗？它会从图片库中移除。",
+        selection: {
+          enter: "选择",
+          exit: "完成",
+          count: "已选 {{count}} 张",
+          selectAll: "全选已加载",
+          clear: "清除选择",
+          downloadZip: "下载 ZIP（{{count}}）",
+          zipPacking: "打包中…",
+          hint: "在空白处按住拖拽即可框选，点击卡片可切换选中，Shift+点击做范围选择，拖到屏幕上下边缘会自动滚动，Esc 取消。",
+        },
+        messages: {
+          promptCopied: "提示词已复制。",
+          downloadStarted: "已开始下载。",
+          imageDeleted: "缓存图片已删除。",
+          cacheCleared: "图片缓存已清空。",
+          loadFailed: "图片库加载失败。",
+          zipDownloadStarted: "已开始下载 ZIP。",
+          zipFailed: "打包 ZIP 失败。",
+        },
+      },
+      tasks: {
+        title: "任务",
+
+        stats: "待处理 {{pending}} · 运行中 {{running}} · 成功 {{success}} · 失败 {{error}}",
+        total: "共 {{count}} 个",
+        empty: "还没有任务。输入提示词并生成第一张图片。",
+
+        elapsed: "耗时：{{value}}",
+        generating: "生成中...",
+        noImageYet: "暂无图片",
+        noTextYet: "暂无文字结果",
+        analyzing: "识别中...",
+        restoringCachedImage: "正在恢复缓存图片...",
+        previewGeneratedImage: "预览生成图片",
+        debugDetails: "调试详情",
+        outputText: "识图结果",
+
+
+        fields: {
+          model: "模型",
+          size: "尺寸",
+          format: "格式",
+          inputImages: "输入图片",
+          detail: "细节级别",
+          cost: "预估费用",
+
+        },
+        status: {
+          pending: "待处理",
+          running: "运行中",
+          success: "成功",
+          error: "失败",
+          cancelled: "已取消",
+        },
+        actions: {
+          preview: "预览",
+          download: "下载",
+          copyImageUrl: "复制图片 URL",
+          copyOutput: "复制文字结果",
+          downloadText: "下载文字",
+          copyPrompt: "复制提示词",
+          copyDebug: "复制调试 JSON",
+          deleteImageCache: "删除图片缓存",
+
+          reuseParams: "使用此参数",
+          retry: "重试",
+          cancel: "取消",
+          delete: "删除",
+          more: "更多",
+        },
+        cache: {
+          title: "图片缓存",
+          summary: "{{count}} 张 · {{size}}",
+          warning: "缓存已超过 200MB，建议清理旧图片。",
+          clear: "清空缓存",
+          clearConfirm: "确定清空所有缓存图片吗？任务记录会保留，但历史图片可能不再显示。",
+          cachedBadge: "已缓存",
+        },
+        messages: {
+
+          imageUrlCopied: "图片 URL 已复制。",
+          outputCopied: "识图文字已复制。",
+          outputDownloadStarted: "已开始下载文字。",
+          promptCopied: "提示词已复制。",
+          debugCopied: "调试 JSON 已复制。",
+          downloadStarted: "已开始下载。",
+          imageCacheDeleted: "图片缓存已删除。",
+          taskCancelled: "任务已取消。",
+          taskInterrupted: "任务因页面重新加载而中断。",
+          editInputsDropped: "输入图片已从内存释放，请重新上传后再重试编辑任务。",
+          visionInputsDropped: "识图图片已从内存释放，请重新上传后再重试识图任务。",
+
+          paramsApplied: "参数已填入。",
+          paramsAppliedInputsLost:
+            "参数已填入。参考图片已失效，如需编辑模式请重新上传。",
+        },
+
+      },
+      preview: {
+        closePreview: "关闭预览",
+        close: "关闭",
+        alt: "预览",
+      },
+      canvas: {
+        title: "画布",
+        empty: {
+          title: "画布还是空的",
+          hint: "生成的图片会实时出现在这里，可预览、下载或复用参数。",
+        },
+      },
+      notice: {
+      },
+      errors: {
+        unknown: "未知错误。",
+        requestFailed: "请求失败。请检查 API Key、Base URL、模型、网络或 CORS 设置。",
+        apiKeyRequired: "请填写 API Key。",
+        apiBaseUrlRequired: "请填写 API Base URL。",
+        modelRequired: "请填写模型。",
+        visionModelRequired: "请填写识图模型。",
+        promptRequired: "请填写提示词。",
+        visionImageRequired: "请至少上传一张用于识图的图片。",
+        rateLimited: "请求过于频繁（429）。已触发限流，请稍后再试或降低并发数量。",
+        unauthorized: "认证失败（401/403）。请检查 API Key 是否有效、是否有该模型的访问权限。",
+        notFound: "接口不存在（404）。请检查 Base URL 与模型名称是否正确。",
+        serverError: "服务端错误（5xx）。上游服务暂时不可用，请稍后重试。",
+        network: "网络请求失败。请检查网络、Base URL 与 CORS 设置。",
+
+        apiKeyRequiredToFetchModels: "获取模型前请先填写 API Key。",
+        apiBaseUrlRequiredToFetchModels: "获取模型前请先填写 API Base URL。",
+        advancedJsonInvalid: "高级 JSON 参数不是有效的 JSON。",
+        advancedJsonObject: "高级 JSON 参数必须是 JSON 对象。",
+        batchPromptsRequired: "请至少填一行提示词（# 注释行和空行会被跳过）。",
+      },
+      batch: {
+        title: "批量生图",
+        subtitle: "一份 prompt 列表跑出整批任务：参数共享、失败可重跑、完成后可打包下载。",
+        prompts: {
+          title: "Prompt 列表",
+          hint: "一行一条 prompt。# 开头的行视为注释。空行会被跳过。",
+          placeholder: "# 战士系列\na heavily armored knight on a cliff at sunset\na young female mage casting a fire spell\n\n# 法师系列\nan old wizard with a crystal staff in a library",
+          importButton: "导入 .txt / .md / .csv",
+          clearButton: "清空",
+          parsedCount: "已解析 {{count}} 条 prompt",
+          parsedComments: "跳过 {{comments}} 行注释",
+          parsedEmpty: "跳过 {{empty}} 行空行",
+          importFailed: "导入失败：{{reason}}",
+        },
+        inputImages: {
+          title: "共享参考图（可选）",
+          hint: "上传至少一张图片后，批次会走图生图（edits）流程。所有 prompt 共享同一组参考图。",
+          addButton: "添加图片",
+          remove: "移除",
+          editModeBadge: "图生图模式",
+          multipleImagesWarning: "当前模型可能不支持多参考图，实际可能只有第一张被使用。",
+        },
+        size: "尺寸（宽 x 高）",
+        countPerPrompt: "每条 prompt 重复次数",
+        countPerPromptHint: "每条 prompt 生成几张图（例如填 3 即每条 prompt 生成 3 张图）。",
+        advancedJsonParams: "高级 JSON 参数（共享）",
+        submitSummary: "将创建 {{prompts}} 条 prompt × {{count}} = {{total}} 个任务。",
+        startGenerate: "开始批量生成",
+        startEdit: "开始批量图生图",
+        progress: {
+          title: "当前批次",
+          donePart: "{{done}}/{{total}} 完成",
+          runningPart: "{{running}} 运行中",
+          errorPart: "{{error}} 失败",
+          tasksHint: "详细任务卡片请到下方任务面板查看。",
+        },
+        actions: {
+          retryErrors: "重跑失败项（{{count}}）",
+          exportZip: "下载 ZIP（{{count}}）",
+          exporting: "打包中…",
+          exportDone: "已导出 {{exported}} 张图片{{missing, plural, =0 {} other { · 缺失 {{missing}} 张}}}。",
+        },
+      },
+      batchRename: {
+        title: "批量重命名",
+        subtitle: "AI 驱动的美术资源重命名。拖入图片，获取智能命名，下载重命名脚本。",
+        dropHint: "拖拽图片到此处，或点击选择文件",
+        formatHint: "支持 JPG、PNG、WebP、TGA、BMP",
+        namingMode: "命名模式",
+        modeCompact: "🏷️ 简洁",
+        modeDescriptive: "📝 描述",
+        modeCompactHint: "如 rock_mossy_dark",
+        modeDescriptiveHint: "如 tree_pine_on_rock_leaning_left",
+        start: "🚀 开始重命名",
+        stop: "停止",
+        downloadScript: "💾 下载重命名脚本（带一键还原）",
+        downloadZip: "📦 下载重命名后的 ZIP",
+        clear: "全部清除",
+        remove: "移除",
+        statusPending: "待处理",
+        statusProcessing: "识别中…",
+        stats: "共 {{total}} 张 · 已完成 {{done}} 张",
+        settingsRequired: "请先在 API 设置中配置 API Key、Base URL 和识图模型。",
+      },
+    },
+  },
+} as const;

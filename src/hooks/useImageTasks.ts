@@ -1,8 +1,3 @@
-/*
- * Intent: Task queue management with IndexedDB persistence (2026-10-05)
- * Original requirement: Migrate from localStorage to IDB, remove 500-task limit, preserve functionality
- */
-
 import { useCallback, useEffect, useRef, useState } from "react";
 import { editImage, generateImage, getImageGenerationDebug } from "../api/openaiImages";
 import { analyzeImages, getVisionAnalysisDebug } from "../api/openaiVision";
@@ -16,18 +11,10 @@ import {
   IMAGE_CACHE_WARNING_BYTES,
   type CachedImageRecord,
 } from "../lib/imageCache";
-import { toI18nError } from "../lib/errors";
+import { toFriendlyError } from "../lib/errors";
 import { buildCompatibleImageRequest } from "../lib/imageSizing";
 import { estimateImageCost, estimateTokenCost, extractUsageFromRaw } from "../lib/pricing";
-import {
-  getTasks,
-  updateTask,
-  deleteTask,
-  clearTasks as clearStoredTasks,
-  saveTaskInputs,
-  deleteTaskInputs,
-  clearTaskInputs,
-} from "../lib/storageNew";
+import { loadTasks, saveTasks } from "../lib/storage";
 import { reportStorageIssue } from "../lib/storageHealth";
 import { generateThumbnail } from "../lib/thumbnail";
 import type { AppSettings, GenerateFormState, ImageCacheStats, ImageTask, InputImageFile, VisionFormState } from "../types";
@@ -87,27 +74,19 @@ function imageSourceFromTask(task: ImageTask) {
 }
 
 export function useImageTasks(settings: AppSettings) {
-  const [tasks, setTasks] = useState<ImageTask[]>([]);
-  const [tasksLoaded, setTasksLoaded] = useState(false);
+  const [tasks, setTasks] = useState<ImageTask[]>(() => loadTasks());
   const [cacheStats, setCacheStats] = useState<ImageCacheStats>(() => createEmptyCacheStats());
   const settingsRef = useRef(settings);
   const tasksRef = useRef(tasks);
   const controllersRef = useRef(new Map<string, AbortController>());
   const objectUrlsRef = useRef(new Set<string>());
-  // Edit-mode inputs can't be persisted (they're raw File blobs). Keep them in
-  // memory keyed by task id; drop entries once the task finishes or is removed.
+  // Inputs the queue still has to send. Kept in memory keyed by task id and
+  // dropped once the task succeeds or is removed; successful edits persist a
+  // copy with the cached result (see cacheGeneratedImage).
   const pendingInputsRef = useRef(new Map<string, PendingTaskInputs>());
-
-  // Load tasks from IndexedDB on mount
-  useEffect(() => {
-    getTasks().then((loaded) => {
-      setTasks(loaded);
-      setTasksLoaded(true);
-    }).catch((error) => {
-      console.error('Failed to load tasks from IDB:', error);
-      setTasksLoaded(true);
-    });
-  }, []);
+  // Tasks from one submission share the same images array; the first one to
+  // be cached persists the inputs and becomes their owner.
+  const inputOwnersRef = useRef(new WeakMap<File[], string>());
 
 
   const revokeObjectUrl = useCallback((url?: string) => {
@@ -154,7 +133,7 @@ export function useImageTasks(settings: AppSettings) {
             b64Json: undefined,
             imageCached: true,
             imageMimeType: record.mimeType,
-            imageSize: record.size,
+            imageSize: record.blob.size,
           };
         }),
       );
@@ -168,16 +147,8 @@ export function useImageTasks(settings: AppSettings) {
 
   useEffect(() => {
     tasksRef.current = tasks;
-
-    // Persist tasks to IndexedDB (no 500-item limit, replaces localStorage batch save)
-    if (tasksLoaded) {
-      tasks.forEach(task => {
-        updateTask(task).catch(err => {
-          console.error('Failed to persist task:', err);
-        });
-      });
-    }
-  }, [tasks, tasksLoaded]);
+    saveTasks(tasks);
+  }, [tasks]);
 
   useEffect(() => {
     let active = true;
@@ -244,13 +215,31 @@ export function useImageTasks(settings: AppSettings) {
 
   const cacheGeneratedImage = useCallback(
 
-    async (task: ImageTask, imageUrl: string, b64Json: string | undefined, signal: AbortSignal) => {
+    async (
+      task: ImageTask,
+      imageUrl: string,
+      b64Json: string | undefined,
+      signal: AbortSignal,
+      inputs?: PendingTaskInputs,
+    ) => {
+      const owners = inputOwnersRef.current;
+      const inputsOwner = inputs ? owners.get(inputs.images) : undefined;
+      // Claim before the async write so concurrently finishing siblings see it.
+      if (inputs && !inputsOwner) {
+        owners.set(inputs.images, task.id);
+      }
       const metadata = {
         prompt: task.prompt,
         model: task.model,
         generationSize: task.size,
         responseFormat: task.responseFormat,
         taskCreatedAt: task.createdAt,
+        extraParams: task.extraParams,
+        ...(inputs
+          ? inputsOwner && inputsOwner !== task.id
+            ? { inputsFromId: inputsOwner }
+            : { inputImages: inputs.images, inputMask: inputs.mask ?? null }
+          : {}),
       };
 
       // Try caching from the primary imageUrl first. If it fails (e.g. the
@@ -272,16 +261,25 @@ export function useImageTasks(settings: AppSettings) {
             imageUrl: createObjectUrl(cached.blob),
             imageCached: true,
             imageMimeType: cached.mimeType,
-            imageSize: cached.size,
+            imageSize: cached.blob.size,
           };
         } catch (error) {
           if (signal.aborted) {
-            throw error;
+            lastError = error;
+            break;
           }
 
           lastError = error;
           console.warn("[openai-image-webui] Cache attempt failed for", url, error);
         }
+      }
+
+      if (inputs && owners.get(inputs.images) === task.id) {
+        owners.delete(inputs.images);
+      }
+
+      if (signal.aborted) {
+        throw lastError;
       }
 
       console.warn("[openai-image-webui] Failed to cache generated image (all attempts)", lastError);
@@ -406,7 +404,13 @@ export function useImageTasks(settings: AppSettings) {
                 extraParams: task.extraParams,
                 signal: controller.signal,
               });
-          const cachedImage = await cacheGeneratedImage(task, result.imageUrl, result.b64Json, controller.signal);
+          const cachedImage = await cacheGeneratedImage(
+            task,
+            result.imageUrl,
+            result.b64Json,
+            controller.signal,
+            shouldEdit ? pendingInputs : undefined,
+          );
 
           const imageQuality = typeof task.extraParams?.quality === "string" ? task.extraParams.quality : undefined;
           const imageCost = estimateImageCost(task.model, task.size, imageQuality, 1);
@@ -445,7 +449,7 @@ export function useImageTasks(settings: AppSettings) {
                 ? {
                     ...item,
                     status: wasAborted ? "cancelled" : "error",
-                    error: wasAborted ? "tasks.messages.taskCancelled" : toI18nError(error),
+                    error: wasAborted ? "tasks.messages.taskCancelled" : toFriendlyError(error),
                     debug,
                     finishedAt: Date.now(),
                   }
@@ -566,6 +570,7 @@ export function useImageTasks(settings: AppSettings) {
     const inputImageFiles = form.inputImages.map((item) => item.file);
     const maskFile = form.maskImage?.file ?? null;
     const isEdit = inputImageFiles.length > 0;
+    const groupId = createTaskId();
 
     const newTasks: ImageTask[] = Array.from({ length: count }, (_, index) => {
       const id = createTaskId();
@@ -584,6 +589,7 @@ export function useImageTasks(settings: AppSettings) {
         responseFormat: currentSettings.responseFormat,
         status: "pending",
         createdAt: now + index,
+        groupId,
         extraParams: compatibleRequest.extraParams,
         inputImageCount: isEdit ? inputImageFiles.length : undefined,
         hasMask: isEdit && maskFile ? true : undefined,
@@ -626,11 +632,6 @@ export function useImageTasks(settings: AppSettings) {
           current.map((t) => (t.id === id ? { ...t, inputThumbnail: thumb } : t)),
         );
       }).catch(() => undefined);
-      // Originals go to IndexedDB so the lightbox can show full-resolution
-      // input instead of the tiny preview thumbnail.
-      void saveTaskInputs(id, inputImageFiles).catch((error) =>
-        console.warn("[useImageTasks] failed to persist vision inputs", error),
-      );
     }
   }
 
@@ -662,6 +663,7 @@ export function useImageTasks(settings: AppSettings) {
     let batchIndex = 0;
 
     for (const prompt of prompts) {
+      const groupId = createTaskId();
       for (let c = 0; c < count; c += 1) {
         const compatible = buildCompatibleImageRequest({
           model,
@@ -692,6 +694,7 @@ export function useImageTasks(settings: AppSettings) {
           responseFormat: currentSettings.responseFormat,
           status: "pending",
           createdAt: now + batchIndex,
+          groupId,
           extraParams: taskExtra,
           inputImageCount: isEdit ? inputImageFiles.length : undefined,
         });
@@ -823,13 +826,8 @@ export function useImageTasks(settings: AppSettings) {
     controllersRef.current.delete(id);
     pendingInputsRef.current.delete(id);
     revokeObjectUrl(currentTask?.imageUrl);
-    void deleteTaskInputs(id).catch(() => undefined);
     setTasks((current) => current.filter((task) => task.id !== id));
 
-    // Delete from IndexedDB
-    deleteTask(id).catch(err => {
-      console.error('Failed to delete task from IDB:', err);
-    });
   }
 
   function clearTaskImage(id: string) {
@@ -881,9 +879,6 @@ export function useImageTasks(settings: AppSettings) {
     objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
     objectUrlsRef.current.clear();
     setTasks([]);
-    // "Clear tasks" must also mean cleared after a reload — drop the IDB history.
-    void clearStoredTasks().catch((error) => console.warn("[useImageTasks] failed to clear stored tasks", error));
-    void clearTaskInputs().catch((error) => console.warn("[useImageTasks] failed to clear task inputs", error));
   }
 
 

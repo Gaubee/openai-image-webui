@@ -16,8 +16,7 @@ export type StorageIssueKind =
   | "taskQuotaExceeded"
   | "settingsWriteFailed"
   | "imageCacheWriteFailed"
-  | "imageCacheEvictionFailed"
-  | "migrationFailed";
+  | "imageCacheEvictionFailed";
 
 export interface StorageIssue {
   kind: StorageIssueKind;

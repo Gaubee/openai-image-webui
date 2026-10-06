@@ -89,6 +89,8 @@ export interface ImageTask {
   outputText?: string;
   error?: string;
   createdAt: number;
+  /** Shared by tasks submitted together (one Generate click, or one prompt of a batch). */
+  groupId?: string;
 
   startedAt?: number;
   finishedAt?: number;
