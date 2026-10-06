@@ -9,6 +9,7 @@ import { fetchModels, type ModelCapability, type ModelInfo } from "../api/openai
 import { isI18nErrorKey, toI18nError } from "../lib/errors";
 import type { AppSettings, ImageResponseFormat } from "../types";
 import { Notice } from "./Notice";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 const PROVIDER_PRESETS: Array<{
   name: string;
@@ -174,6 +175,10 @@ export const SettingsPanel = memo(function SettingsPanel({ settings, onChange, o
   if (isCollapsed) {
     return (
       <section className="rounded border border-surface-3 bg-surface-1 p-4">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <span className="text-sm font-medium text-text-primary">{t("settings.language")}</span>
+          <LanguageSwitcher />
+        </div>
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0 flex-1">
             <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold leading-tight text-text-primary">

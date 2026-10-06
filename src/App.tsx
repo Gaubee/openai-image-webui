@@ -5,10 +5,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Eye, Images, PenLine } from "lucide-react";
+import { Images } from "lucide-react";
+import { CanvasGrid } from "./components/CanvasGrid";
 import { GenerationPanel } from "./components/GenerationPanel";
+import { TaskLightbox } from "./components/TaskLightbox";
 import { Header } from "./components/Header";
-import { Footer } from "./components/Footer";
 import { ImageLibrary } from "./components/ImageLibrary";
 import { ImagePreviewModal } from "./components/ImagePreviewModal";
 import { SettingsPanel } from "./components/SettingsPanel";
@@ -17,7 +18,6 @@ import { BatchRenamePanel } from "./components/BatchRenamePanel";
 import { BatchGenerationPanel } from "./components/BatchGenerationPanel";
 import { StorageHealthBanner } from "./components/StorageHealthBanner";
 import { Drawer } from "./components/Drawer";
-import { ResultGallery } from "./components/ResultGallery";
 
 import { useImageTasks } from "./hooks/useImageTasks";
 import { useSettings } from "./hooks/useSettings";
@@ -138,6 +138,7 @@ export default function App() {
   const [isExportingBatch, setIsExportingBatch] = useState(false);
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [lightboxTask, setLightboxTask] = useState<ImageTask | null>(null);
   const [activeMode, setActiveMode] = useState<AppMode>("generate");
   const [drawerPanel, setDrawerPanel] = useState<DrawerPanel>(null);
 
@@ -532,28 +533,35 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
   }, [handleExportBatch]);
 
   return (
-    <div className="min-h-screen bg-surface-0 text-text-primary">
-      <div className="mx-auto max-w-6xl px-4 py-6">
-        <Header
-          onOpenMenu={() => setDrawerPanel("settings")}
-          onOpenSettings={() => setDrawerPanel("settings")}
-          isConnected={!!(settings.apiKey.trim() && settings.baseUrl.trim())}
-          hasTasks={tasks.length > 0}
-          onClearTasks={handleClearTasks}
-        />
+    <div className="flex min-h-dvh flex-col bg-surface-0 text-text-primary xl:h-dvh xl:overflow-hidden">
+      <Header
+        onOpenVision={() => setDrawerPanel("vision")}
+        onOpenRename={() => setDrawerPanel("rename")}
+        onOpenLibrary={() => setDrawerPanel("library")}
+        onOpenSettings={() => setDrawerPanel("settings")}
+        isConnected={!!(settings.apiKey.trim() && settings.baseUrl.trim())}
+        hasTasks={tasks.length > 0}
+        onClearTasks={handleClearTasks}
+      />
 
-        <StorageHealthBanner />
+      <StorageHealthBanner />
 
-        {/* Mode switcher (segmented) + tool entries (ghost) — two distinct tiers */}
-        <nav className="mb-5 flex flex-wrap items-center gap-2">
-          <div className="flex rounded border border-surface-3 bg-surface-1 p-0.5" role="group" aria-label={t("workspace.modes.generate")}>
+      {/* App shell: control rail + canvas. The page itself never scrolls on
+          desktop — each pane scrolls internally, like a native workbench. */}
+      <div className="flex min-h-0 flex-1 flex-col gap-4 px-4 pb-4 xl:flex-row xl:overflow-hidden xl:pt-4">
+        {/* Control rail: mode switch on top, panel below, CTA pinned by panel */}
+        <section
+          className="flex w-full shrink-0 flex-col gap-3 xl:w-[340px]"
+          aria-label={t("workspace.modes.generate")}
+        >
+          <div className="flex shrink-0 rounded border border-surface-3 bg-surface-1 p-0.5" role="group" aria-label={t("workspace.modes.generate")}>
             {(["generate", "batch"] as const).map((mode) => (
               <button
                 key={mode}
                 type="button"
                 onClick={() => setActiveMode(mode)}
                 aria-pressed={activeMode === mode}
-                className={`min-h-9 whitespace-nowrap rounded px-4 py-1.5 text-sm font-medium transition-colors max-sm:min-h-11 ${
+                className={`min-h-9 flex-1 whitespace-nowrap rounded px-4 py-1.5 text-sm font-medium transition-colors max-sm:min-h-11 ${
                   activeMode === mode
                     ? "bg-accent/10 text-accent ring-1 ring-accent/40 ring-inset"
                     : "text-text-secondary hover:text-text-primary"
@@ -563,84 +571,59 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
               </button>
             ))}
           </div>
-          <div className="ml-auto flex flex-wrap items-center gap-0.5">
-            {([
-              { key: "vision", panel: "vision", icon: Eye },
-              { key: "rename", panel: "rename", icon: PenLine },
-              { key: "library", panel: "library", icon: Images },
-            ] as const).map(({ key, panel, icon: Icon }) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setDrawerPanel(panel)}
-                className="inline-flex min-h-9 items-center gap-1.5 whitespace-nowrap rounded px-2.5 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-1 hover:text-text-primary max-sm:min-h-11"
-              >
-                <Icon className="h-4 w-4" />
-                {key === "library" ? t("library.title") : t(`workspace.modes.${key}`)}
-              </button>
-            ))}
+          <div className="min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-0.5">
+            {activeMode === "generate" ? (
+              <GenerationPanel
+                form={form}
+                error={formError}
+                model={settings.model}
+                onChange={updateForm}
+                onSubmit={handleGenerate}
+              />
+            ) : (
+              <BatchGenerationPanel
+                form={batchForm}
+                error={batchError}
+                model={settings.model}
+                tasks={tasks}
+                currentBatchId={currentBatchId}
+                isExporting={isExportingBatch}
+                onChange={updateBatchForm}
+                onSubmit={handleBatchGenerate}
+                onRetryBatchErrors={handleRetryBatchErrors}
+                onExportBatch={handleExportBatchClick}
+              />
+            )}
           </div>
-        </nav>
+        </section>
 
-        {/* Main canvas: workbench grid — form left, results right (R6) */}
-        {(() => {
-          const visibleTasks =
-            activeMode === "batch" && currentBatchId
-              ? tasks.filter((task) => getTaskBatchId(task) === currentBatchId)
-              : tasks;
-          return (
-            <main className="grid items-start gap-6 xl:grid-cols-[minmax(340px,420px)_minmax(0,1fr)]">
-              {/* max-h reserves the ~150px header chrome so the rail (and its pinned CTA)
-      never extends past the viewport, even before the page is scrolled */}
-              <div className="space-y-6 xl:sticky xl:top-4 xl:max-h-[calc(100vh-9.5rem)] xl:overflow-y-auto">
-                {activeMode === "generate" ? (
-                  <GenerationPanel
-                    form={form}
-                    error={formError}
-                    model={settings.model}
-                    onChange={updateForm}
-                    onSubmit={handleGenerate}
-                  />
-                ) : (
-                  <BatchGenerationPanel
-                    form={batchForm}
-                    error={batchError}
-                    model={settings.model}
-                    tasks={tasks}
-                    currentBatchId={currentBatchId}
-                    isExporting={isExportingBatch}
-                    onChange={updateBatchForm}
-                    onSubmit={handleBatchGenerate}
-                    onRetryBatchErrors={handleRetryBatchErrors}
-                    onExportBatch={handleExportBatchClick}
-                  />
-                )}
+        {/* Canvas: imagery first — grid of tiles, click for the full story */}
+        <section className="flex min-w-0 flex-1 flex-col xl:overflow-hidden" aria-label={t("canvas.title")}>
+          {(() => {
+            const visibleTasks =
+              activeMode === "batch" && currentBatchId
+                ? tasks.filter((task) => getTaskBatchId(task) === currentBatchId)
+                : tasks;
+            if (visibleTasks.length === 0) {
+              return (
+                <div className="flex min-h-[45vh] flex-1 flex-col items-center justify-center gap-3 rounded border border-dashed border-surface-3 bg-surface-1/40 px-6 text-center">
+                  <Images className="h-8 w-8 text-text-tertiary" aria-hidden />
+                  <p className="text-sm font-medium text-text-secondary">{t("canvas.empty.title")}</p>
+                  <p className="max-w-xs text-xs leading-5 text-text-tertiary">{t("canvas.empty.hint")}</p>
+                </div>
+              );
+            }
+            return (
+              <div className="min-h-0 flex-1 xl:overflow-y-auto xl:pr-0.5">
+                <CanvasGrid
+                  tasks={visibleTasks}
+                  onOpenTask={setLightboxTask}
+                  onRetry={retryTask}
+                />
               </div>
-              <div className="min-w-0">
-                {visibleTasks.length === 0 ? (
-                  <div className="flex min-h-[45vh] flex-col items-center justify-center gap-3 rounded border border-dashed border-surface-3 bg-surface-1/40 px-6 text-center xl:min-h-[60vh]">
-                    <Images className="h-8 w-8 text-text-tertiary" aria-hidden />
-                    <p className="text-sm font-medium text-text-secondary">{t("canvas.empty.title")}</p>
-                    <p className="max-w-xs text-xs leading-5 text-text-tertiary">{t("canvas.empty.hint")}</p>
-                  </div>
-                ) : (
-                  <ResultGallery
-                    id={activeMode === "batch" ? "batch-results" : "result-gallery"}
-                    tasks={visibleTasks}
-                    onPreview={setPreviewUrl}
-                    onRetry={retryTask}
-                    onCancel={cancelTask}
-                    onRemove={removeTask}
-                    onClearTaskImage={clearTaskImage}
-                    onReuseParams={handleReuseTask}
-                  />
-                )}
-              </div>
-            </main>
-          );
-        })()}
-
-        <Footer />
+            );
+          })()}
+        </section>
       </div>
 
       {/* Drawer navigation */}
@@ -689,6 +672,16 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
       >
         <BatchRenamePanel settings={settings} />
       </Drawer>
+
+      <TaskLightbox
+        task={lightboxTask}
+        onClose={() => setLightboxTask(null)}
+        onRetry={retryTask}
+        onCancel={cancelTask}
+        onRemove={removeTask}
+        onClearImage={clearTaskImage}
+        onReuseParams={handleReuseTask}
+      />
 
       <ImagePreviewModal imageUrl={previewUrl} onClose={closePreview} />
 

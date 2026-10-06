@@ -43,6 +43,7 @@ export const resources = {
       },
       settings: {
         title: "API Settings",
+        language: "Language",
         subtitle: "Bring your own endpoint and key.",
         reset: "Reset",
         edit: "Edit",
@@ -312,6 +313,7 @@ export const resources = {
         alt: "Preview",
       },
       canvas: {
+        title: "Canvas",
         empty: {
           title: "The canvas is empty",
           hint: "Generated images appear here in real time — preview, download, or reuse their params.",
@@ -440,6 +442,7 @@ export const resources = {
       },
       settings: {
         title: "API 设置",
+        language: "语言",
         subtitle: "填写你自己的接口地址和密钥。",
         reset: "重置",
         edit: "编辑",
@@ -703,6 +706,7 @@ export const resources = {
         alt: "预览",
       },
       canvas: {
+        title: "画布",
         empty: {
           title: "画布还是空的",
           hint: "生成的图片会实时出现在这里，可预览、下载或复用参数。",

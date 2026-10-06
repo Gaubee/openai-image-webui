@@ -138,9 +138,9 @@ export const BatchGenerationPanel = memo(function BatchGenerationPanel({
       <form className="space-y-4" onSubmit={handleSubmit}>
         {/* Prompt list */}
         <div className="rounded border border-surface-3 bg-surface-2 p-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-text-primary">{t("batch.prompts.title")}</p>
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="whitespace-nowrap text-sm font-medium text-text-primary">{t("batch.prompts.title")}</p>
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 className="rounded border border-surface-3 bg-surface-1 px-2.5 py-1 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
