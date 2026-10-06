@@ -4,6 +4,7 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   base: "/",
   plugins: [react()],
+  cacheDir: "node_modules/.vite-upstream",
   // Upstream-original UI (index.html + src/). Our independent webapp UI has
   // its own root and config: see vite.webapp.config.ts + webapp/.
   // Non-default fallback port (5173 caused recurring conflicts). When run

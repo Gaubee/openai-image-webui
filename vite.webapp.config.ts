@@ -1,3 +1,4 @@
+import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
@@ -8,10 +9,22 @@ import react from "@vitejs/plugin-react";
  * server/port. No publicDir: the upstream PWA service worker must not cache
  * the webapp.
  */
+const repoRoot = fileURLToPath(new URL("..", import.meta.url));
+
 export default defineConfig({
+  root: "webapp",
   base: "/",
   plugins: [react()],
   publicDir: false,
+  // Both dev servers run from the same repo — keep their dep-optimizer
+  // caches separate or they corrupt each other's pre-bundles on startup.
+  cacheDir: "node_modules/.vite-webapp",
   // Non-default fallback port; `portless` owns routing when wrapped (pnpm dev:webapp)
-  server: { port: 4827, strictPort: false },
+  server: {
+    port: 4827,
+    strictPort: false,
+    // Deps are pre-bundled into the repo-root node_modules — /@fs references
+    // there must stay servable even though the vite root is webapp/.
+    fs: { allow: [repoRoot] },
+  },
 });

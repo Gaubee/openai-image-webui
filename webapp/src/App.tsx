@@ -257,7 +257,6 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
     const { prompt: cleanPrompt, extraParams: cleanExtra } = stripGeminiSizeArtifacts(
       payload.model,
       payload.prompt,
-      payload.size,
       payload.extraParams,
     );
 

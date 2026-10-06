@@ -212,6 +212,9 @@ function hasPromptAspectRatio(prompt: string) {
   return /(?:^|\s)--(?:ar|aspect(?:-ratio)?)\s+\d+(?:\s*[:/]\s*\d+)?\b/i.test(prompt);
 }
 
+/** A trailing `--ar W:H`, where buildCompatibleImageRequest appends it for Gemini. */
+const TRAILING_ASPECT_RATIO = /\s*--(?:ar|aspect(?:-ratio)?)\s+\d+\s*[:/]\s*\d+\s*$/i;
+
 function closestSize(size: ImageSize | null, allowed: readonly string[]) {
   if (!size) return allowed[0];
 
@@ -354,6 +357,9 @@ export function buildCompatibleImageRequest({
   const parsedSize = parseSize(size);
   const normalizedPrompt = prompt.trim();
   const nextExtraParams = { ...extraParams };
+  // The size field is the single source of truth; a "size" left in advanced
+  // JSON would silently override it (and be sent twice on multipart edits).
+  delete nextExtraParams.size;
   const profile = getModelSizingProfile(model);
 
   if (isDalle2(model)) {
@@ -402,11 +408,16 @@ export function buildCompatibleImageRequest({
       nextExtraParams.image_size = imageSize;
     }
 
+    // A trailing --ar is usually a leftover from a copied / reused prompt;
+    // replace it so it can't contradict the selected size.
+    const basePrompt = normalizedPrompt.replace(TRAILING_ASPECT_RATIO, "");
+
     return {
-      prompt:
-        shouldAppendPromptAr && !hasPromptAspectRatio(normalizedPrompt)
-          ? `${normalizedPrompt} --ar ${aspectRatio}`
-          : normalizedPrompt,
+      prompt: !shouldAppendPromptAr
+        ? normalizedPrompt
+        : hasPromptAspectRatio(basePrompt)
+          ? basePrompt
+          : `${basePrompt} --ar ${aspectRatio}`,
       size: geminiCanonicalSize(model, aspectRatio, imageSize),
       extraParams: nextExtraParams,
     };
@@ -417,18 +428,6 @@ export function buildCompatibleImageRequest({
     size: normalizeSize(size) || size.trim(),
     extraParams: nextExtraParams,
   };
-}
-
-/**
- * Match a trailing `--ar <w>:<h>` (or `--aspect-ratio`, with `/` or spaced
- * separators) appended to a prompt. Only used to strip the suffix that
- * {@link buildCompatibleImageRequest} auto-appends for Gemini models.
- */
-function buildTrailingAspectRatioRegExp(w: number, h: number) {
-  return new RegExp(
-    `\\s+--(?:ar|aspect(?:-ratio)?)\\s+${w}\\s*[:/]\\s*${h}\\b\\s*$`,
-    "i",
-  );
 }
 
 /**
@@ -443,16 +442,14 @@ function buildTrailingAspectRatioRegExp(w: number, h: number) {
  * truth: `aspect_ratio` / `image_size` / `--ar` are re-derived from
  * `form.size` on the next generate, so size changes take effect again.
  *
- * Only the `--ar` suffix whose ratio matches the ratio derived from `size`
- * (i.e. the one auto-appended at generate time) is removed — a user-authored
- * `--ar` with a different ratio is preserved.
+ * Any trailing `--ar` is removed: generate re-appends one from `form.size`
+ * anyway, so keeping it would only show a ratio that may no longer apply.
  *
  * For non-Gemini models this is a no-op.
  */
 export function stripGeminiSizeArtifacts(
   model: string,
   prompt: string,
-  size: string,
   extraParams?: Record<string, unknown>,
 ): { prompt: string; extraParams: Record<string, unknown> | undefined } {
   if (getModelSizingProfile(model).mode !== "geminiAspect") {
@@ -469,22 +466,9 @@ export function stripGeminiSizeArtifacts(
     }
   }
 
-  // 2. Strip the auto-appended "--ar <ratio>" suffix matching the stored
-  //    size's derived ratio (the one buildCompatibleImageRequest appended).
-  let cleanedPrompt = prompt;
-  const derivedRatio = closestAspectRatio(parseSize(size), geminiAspectRatios(model));
-  const parts = derivedRatio.split(":").map(Number);
-  if (Number.isFinite(parts[0]) && Number.isFinite(parts[1]) && parts[0] > 0 && parts[1] > 0) {
-    const next = prompt.replace(buildTrailingAspectRatioRegExp(parts[0], parts[1]), "");
-    if (next !== prompt) {
-      cleanedPrompt = next;
-      touched = true;
-    }
-  }
+  // 2. Strip the trailing "--ar <ratio>" suffix.
+  const cleanedPrompt = prompt.replace(TRAILING_ASPECT_RATIO, "");
 
-  if (!touched) {
-    return { prompt, extraParams };
-  }
   return { prompt: cleanedPrompt, extraParams: touched ? cleaned : extraParams };
 }
 
