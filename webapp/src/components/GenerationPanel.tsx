@@ -5,7 +5,7 @@
  * img2img input images + mask preserved from main branch
  */
 
-import { useEffect, useMemo, useRef, useState, memo, type ChangeEvent, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, memo, type ChangeEvent, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, Minus, Plus } from "lucide-react";
 import type { GenerateFormState, InputImageFile } from "../types";
@@ -15,10 +15,12 @@ import {
   modelLikelySupportsMultipleImages,
   modelRequiresStrictPng,
   prepareInputImage,
+  toInputImageFile,
 } from "../lib/imageInput";
 import { getModelSizingProfile, getRatioChipGroups, defaultSizeForGroup, getSizePresetGroupsForModel } from "../lib/imageSizing";
 import { Notice } from "./Notice";
 import { ImageDropzone } from "./ImageDropzone";
+import { MaskEditor } from "./MaskEditor";
 
 const SIZE_STEP = 64;
 const MIN_SIZE = 256;
@@ -146,6 +148,8 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
   const [recentSizes, setRecentSizes] = useState<string[]>(() => loadRecentSizes());
   const [inputImageError, setInputImageError] = useState("");
   const maskFileInputRef = useRef<HTMLInputElement>(null);
+  const [maskEditorOpen, setMaskEditorOpen] = useState(false);
+  const closeMaskEditor = useCallback(() => setMaskEditorOpen(false), []);
 
   const strictPng = modelRequiresStrictPng(model ?? "");
   const supportsMultiImage = modelLikelySupportsMultipleImages(model ?? "");
@@ -255,7 +259,12 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
       return;
     }
     try {
-      const mask = await prepareInputImage(file, { strictPngOnly: true });
+      // Not prepareInputImage: its strict mode also demands a square image
+      // (a dall-e-2 input rule), which rejected masks for any other ratio.
+      if (file.type !== "image/png") {
+        throw new InputImageError(`Mask must be a PNG. Got: ${file.type || "unknown"}.`);
+      }
+      const mask = await toInputImageFile(file);
       assertMaskMatchesImage(mask, form.inputImages[0]);
       if (form.maskImage) URL.revokeObjectURL(form.maskImage.previewUrl);
       onChange({ maskImage: mask });
@@ -275,7 +284,7 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
     });
     onChange({ inputImages: next });
     // Mask must be dropped if its reference (first image) is gone.
-    if (next.length === 0 && form.maskImage) {
+    if (form.inputImages[0]?.id === id && form.maskImage) {
       URL.revokeObjectURL(form.maskImage.previewUrl);
       onChange({ maskImage: null });
     }
@@ -284,6 +293,15 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
   function removeMask() {
     if (form.maskImage) URL.revokeObjectURL(form.maskImage.previewUrl);
     onChange({ maskImage: null });
+  }
+
+  function handlePaintedMask(file: File | null) {
+    setMaskEditorOpen(false);
+    if (file) {
+      void handleAddMask(file);
+    } else {
+      removeMask();
+    }
   }
 
   function onMaskInputChange(event: ChangeEvent<HTMLInputElement>) {
@@ -332,6 +350,16 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
               <p className="text-xs font-medium text-text-secondary">{t("generation.inputImages.mask")}</p>
               <p className="mt-1 text-xs text-text-tertiary">{t("generation.inputImages.maskHint")}</p>
               <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-accent/40 bg-surface-2 p-1 text-center text-xs font-medium text-accent transition-colors hover:border-accent hover:bg-accent/10"
+                  onClick={() => setMaskEditorOpen(true)}
+                >
+                  <span aria-hidden className="text-lg leading-none">✎</span>
+                  {form.maskImage
+                    ? t("generation.inputImages.editMaskButton")
+                    : t("generation.inputImages.paintMaskButton")}
+                </button>
                 {form.maskImage ? (
                   <div
                     className="group relative h-20 w-20 overflow-hidden rounded-lg border border-surface-3 bg-surface-2"
@@ -359,19 +387,28 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
                     >
                       {t("generation.inputImages.addMaskButton")}
                     </button>
-                    <input
-                      ref={maskFileInputRef}
-                      type="file"
-                      accept="image/png"
-                      hidden
-                      onChange={onMaskInputChange}
-                    />
                   </>
                 )}
+                <input
+                  ref={maskFileInputRef}
+                  type="file"
+                  accept="image/png"
+                  hidden
+                  onChange={onMaskInputChange}
+                />
               </div>
             </div>
           ) : null}
         </ImageDropzone>
+
+        {maskEditorOpen && form.inputImages[0] ? (
+          <MaskEditor
+            image={form.inputImages[0]}
+            initialMask={form.maskImage}
+            onApply={handlePaintedMask}
+            onCancel={closeMaskEditor}
+          />
+        ) : null}
 
         {/* Image count — compact stepper (value domain is tiny: 1-20) */}
         <div className="flex items-center gap-3">
