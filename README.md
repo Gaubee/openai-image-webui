@@ -35,6 +35,19 @@ Bring your own API key and endpoint.
 
 ```bash
 git clone https://github.com/gaubee/openai-image-webui.git
+
+## Two UIs, one repo
+
+This fork keeps the **upstream-original frontend** at the repo root (`index.html` + `src/`) so upstream changes merge cleanly, and maintains an **independently redesigned UI** in [`webapp/`](webapp/) with its own Vite root and config.
+
+| | Upstream UI | Webapp UI (this fork's redesign) |
+|---|---|---|
+| Dev URL | https://openai-image-webui.localhost | https://openai-image-webui-webapp.localhost |
+| Start | `pnpm dev:upstream` | `pnpm dev:webapp` |
+| Both at once | `pnpm dev` (two portless names, two ports) | |
+| Build output | `dist/` | `dist/webapp/` |
+
+Both dev servers run through [portless](https://www.npmjs.com/package/portless) (HTTPS, stable `.localhost` names, no port conflicts). The webapp UI stores data in IndexedDB (settings, tasks, original vision inputs) with a legacy-data migration on first load.
 cd openai-image-webui
 npm install
 npm run dev
