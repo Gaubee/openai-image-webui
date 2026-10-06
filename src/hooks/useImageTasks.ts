@@ -16,7 +16,7 @@ import {
   IMAGE_CACHE_WARNING_BYTES,
   type CachedImageRecord,
 } from "../lib/imageCache";
-import { toFriendlyError } from "../lib/errors";
+import { toI18nError } from "../lib/errors";
 import { buildCompatibleImageRequest } from "../lib/imageSizing";
 import { estimateImageCost, estimateTokenCost, extractUsageFromRaw } from "../lib/pricing";
 import { getTasks, updateTask, deleteTask, clearTasks as clearStoredTasks } from "../lib/storageNew";
@@ -437,7 +437,7 @@ export function useImageTasks(settings: AppSettings) {
                 ? {
                     ...item,
                     status: wasAborted ? "cancelled" : "error",
-                    error: wasAborted ? "tasks.messages.taskCancelled" : toFriendlyError(error),
+                    error: wasAborted ? "tasks.messages.taskCancelled" : toI18nError(error),
                     debug,
                     finishedAt: Date.now(),
                   }

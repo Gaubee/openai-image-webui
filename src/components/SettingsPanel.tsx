@@ -6,7 +6,7 @@
 import { useEffect, useId, useRef, useState, memo } from "react";
 import { useTranslation } from "react-i18next";
 import { fetchModels, type ModelCapability, type ModelInfo } from "../api/openaiModels";
-import { toFriendlyError } from "../lib/errors";
+import { isI18nErrorKey, toI18nError } from "../lib/errors";
 import type { AppSettings, ImageResponseFormat } from "../types";
 import { Notice } from "./Notice";
 
@@ -139,10 +139,13 @@ export const SettingsPanel = memo(function SettingsPanel({ settings, onChange, o
       setModelsState({
         status: "error",
         list: [],
-        error: toFriendlyError(error, {
-          unknown: t("errors.unknown"),
-          requestFailed: t("errors.requestFailed"),
-        }),
+        error: (() => {
+          const value = toI18nError(error, {
+            unknown: t("errors.unknown"),
+            requestFailed: t("errors.requestFailed"),
+          });
+          return isI18nErrorKey(value) ? t(value) : value;
+        })(),
       });
     }
   }

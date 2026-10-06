@@ -27,14 +27,14 @@ export function Header({ onOpenMenu, onOpenSettings, isConnected, hasTasks, onCl
         <h1 className="text-heading font-semibold text-text-primary">
           {t("header.title")}
         </h1>
-        <p className="text-detail text-text-secondary">{t("header.subtitle")}</p>
+        <p className="hidden text-detail text-text-secondary sm:block">{t("header.subtitle")}</p>
       </div>
       <div className="flex items-center gap-1.5">
         <button
           type="button"
           onClick={onClearTasks}
           disabled={!hasTasks}
-          className="rounded p-2 text-text-secondary transition-colors hover:bg-surface-1 hover:text-error disabled:cursor-not-allowed disabled:text-text-tertiary disabled:hover:bg-transparent"
+          className="inline-flex h-9 w-9 items-center justify-center rounded text-text-secondary transition-colors hover:bg-surface-1 hover:text-error disabled:cursor-not-allowed disabled:text-text-tertiary disabled:hover:bg-transparent max-sm:h-11 max-sm:w-11"
           aria-label={t("headerExtras.clearTasks")}
           title={t("headerExtras.clearTasks")}
         >
@@ -50,12 +50,12 @@ export function Header({ onOpenMenu, onOpenSettings, isConnected, hasTasks, onCl
             className={`h-2 w-2 rounded-full ${isConnected ? "bg-success" : "bg-text-tertiary"}`}
             aria-hidden
           />
-          <span className="text-[11px] sm:text-xs">{statusText}</span>
+          <span className="whitespace-nowrap text-[11px] sm:text-xs">{statusText}</span>
         </button>
         <button
           type="button"
           onClick={onOpenMenu}
-          className="rounded p-2 text-text-secondary transition-colors hover:bg-surface-1 hover:text-text-primary"
+          className="inline-flex h-9 w-9 items-center justify-center rounded text-text-secondary transition-colors hover:bg-surface-1 hover:text-text-primary max-sm:h-11 max-sm:w-11"
           aria-label={t("settings.title")}
           title={t("settings.title")}
         >

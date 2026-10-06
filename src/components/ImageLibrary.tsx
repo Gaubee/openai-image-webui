@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
 import { useTranslation } from "react-i18next";
+import { ListChecks, MoreVertical } from "lucide-react";
 import type { TFunction } from "i18next";
 import { listCachedImages, type CachedImageRecord } from "../lib/imageCache";
 import { copyText, downloadImage } from "../lib/download";
@@ -13,9 +14,9 @@ import type { ImageCacheStats, ReuseParamsPayload } from "../types";
 import { ImageCacheSummary } from "./ImageCacheSummary";
 
 const PAGE_SIZE = 50;
-const CARD_MIN_WIDTH = 160;
+const CARD_MIN_WIDTH = 200;
 const GRID_GAP = 16;
-const VIRTUAL_ROW_HEIGHT = 500;
+const VIRTUAL_ROW_HEIGHT = 430;
 const OVERSCAN_ROWS = 2;
 const MARQUEE_THRESHOLD = 4;
 const AUTO_SCROLL_MARGIN = 80;
@@ -245,7 +246,10 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
 
     // The grid mounts only after items load (async) — re-attach whenever the
     // element appears, or gridWidth stays 0 and the grid is stuck at 1 column.
+    // Measure synchronously first: RO's first callback can be delayed (and in
+    // embedded webviews may never fire), which would pin the grid at 1 column.
     if (gridEl) {
+      setGridWidth(gridEl.getBoundingClientRect().width);
       observer.observe(gridEl);
     }
 
@@ -653,9 +657,11 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
           {!selectionMode ? (
             <button
               type="button"
-              className="rounded border border-surface-3 bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-primary transition-colors hover:bg-surface-3"
+              className="inline-flex items-center gap-1.5 rounded border border-surface-3 bg-surface-2 px-3 py-1.5 text-xs font-medium text-text-primary transition-colors hover:bg-surface-3"
               onClick={enterSelectionMode}
+              title={t("library.selection.hint")}
             >
+              <ListChecks className="h-3.5 w-3.5" aria-hidden />
               {t("library.selection.enter")}
             </button>
           ) : (
@@ -804,6 +810,7 @@ const ImageCard = memo(function ImageCard({
   onToggleSelect,
 }: ImageCardProps) {
   const { i18n } = useTranslation();
+  const [moreOpen, setMoreOpen] = useState(false);
   const cardClass = [
     "relative flex h-full flex-col overflow-hidden rounded border bg-surface-2 transition-colors",
     isSelected ? "border-accent ring-2 ring-accent/30" : "border-surface-3",
@@ -838,7 +845,7 @@ const ImageCard = memo(function ImageCard({
       ) : null}
       <button
         type="button"
-        className="block h-56 w-full shrink-0 bg-surface-3"
+        className="block aspect-square w-full shrink-0 bg-surface-3"
         onClick={() => onPreview(item.objectUrl)}
         aria-label={t("library.previewImage")}
         tabIndex={selectionMode ? -1 : 0}
@@ -853,23 +860,26 @@ const ImageCard = memo(function ImageCard({
       </button>
       <div className="flex min-h-0 flex-1 flex-col space-y-3 p-3">
         <div className="flex flex-wrap items-center gap-2 text-xs text-text-tertiary">
-          <span>{new Date(item.taskCreatedAt || item.cachedAt).toLocaleString(i18n.resolvedLanguage)}</span>
+          <span>
+            {new Date(item.taskCreatedAt || item.cachedAt).toLocaleString(i18n.resolvedLanguage, {
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </span>
           <span>{formatBytes(item.size)}</span>
         </div>
         <p className="line-clamp-2 min-h-10 text-sm leading-5 text-text-primary">
           {item.prompt || t("library.unknownPrompt")}
         </p>
-        <dl className="grid grid-cols-2 gap-2 text-xs text-text-secondary">
-          <div className="rounded bg-surface-3 p-2">
-            <dt className="font-medium text-text-primary">{t("tasks.fields.model")}</dt>
-            <dd className="mt-1 truncate">{item.model || t("library.unknownModel")}</dd>
-          </div>
-          <div className="rounded bg-surface-3 p-2">
-            <dt className="font-medium text-text-primary">{t("tasks.fields.size")}</dt>
-            <dd className="mt-1">{item.generationSize || "-"}</dd>
-          </div>
-        </dl>
-        <div className="mt-auto flex flex-wrap gap-2">
+        <div className="flex items-center justify-between gap-2 text-xs text-text-secondary">
+          <span className="truncate" title={item.model || t("library.unknownModel")}>
+            {item.model || t("library.unknownModel")}
+          </span>
+          <span className="shrink-0 tabular-nums text-text-tertiary">{item.generationSize || "-"}</span>
+        </div>
+        <div className="flex items-center gap-2">
           <button
             type="button"
             className="rounded border border-surface-3 bg-surface-1 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
@@ -880,37 +890,69 @@ const ImageCard = memo(function ImageCard({
           </button>
           <button
             type="button"
-            className="rounded bg-accent px-3 py-1.5 text-xs font-medium text-surface-0 transition-colors hover:bg-accent-dim"
+            className="rounded border border-accent/40 bg-surface-1 px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/10"
             onClick={() => void onDownload(item)}
             tabIndex={selectionMode ? -1 : 0}
           >
             {t("tasks.actions.download")}
           </button>
-          <button
-            type="button"
-            className="rounded border border-surface-3 bg-surface-1 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary disabled:cursor-not-allowed disabled:text-text-tertiary"
-            disabled={!item.prompt}
-            onClick={() => void onCopyPrompt(item)}
-            tabIndex={selectionMode ? -1 : 0}
-          >
-            {t("tasks.actions.copyPrompt")}
-          </button>
-          <button
-            type="button"
-            className="rounded border border-surface-3 bg-surface-1 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
-            onClick={() => onReuse(item)}
-            tabIndex={selectionMode ? -1 : 0}
-          >
-            {t("tasks.actions.reuseParams")}
-          </button>
-          <button
-            type="button"
-            className="rounded border border-error/30 bg-surface-1 px-3 py-1.5 text-xs font-medium text-error transition-colors hover:bg-error/10"
-            onClick={() => onDelete(item)}
-            tabIndex={selectionMode ? -1 : 0}
-          >
-            {t("tasks.actions.delete")}
-          </button>
+          <div className="relative ml-auto">
+            <button
+              type="button"
+              className="rounded border border-surface-3 bg-surface-1 px-2 py-1.5 text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
+              aria-label={t("tasks.actions.more")}
+              aria-expanded={moreOpen}
+              aria-haspopup="menu"
+              onClick={() => setMoreOpen((open) => !open)}
+              tabIndex={selectionMode ? -1 : 0}
+            >
+              <MoreVertical className="h-3.5 w-3.5" />
+            </button>
+            {moreOpen && (
+              <div
+                role="menu"
+                className="absolute bottom-full right-0 z-20 mb-1 w-40 rounded border border-surface-3 bg-surface-1 p-1 shadow-soft"
+              >
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="block w-full rounded px-3 py-2 text-left text-xs font-medium text-text-secondary transition-colors hover:bg-surface-2 disabled:cursor-not-allowed disabled:text-text-tertiary"
+                  disabled={!item.prompt}
+                  onClick={() => {
+                    setMoreOpen(false);
+                    void onCopyPrompt(item);
+                  }}
+                  tabIndex={selectionMode ? -1 : 0}
+                >
+                  {t("tasks.actions.copyPrompt")}
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="block w-full rounded px-3 py-2 text-left text-xs font-medium text-text-secondary transition-colors hover:bg-surface-2"
+                  onClick={() => {
+                    setMoreOpen(false);
+                    onReuse(item);
+                  }}
+                  tabIndex={selectionMode ? -1 : 0}
+                >
+                  {t("tasks.actions.reuseParams")}
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="block w-full rounded px-3 py-2 text-left text-xs font-medium text-error transition-colors hover:bg-error/10"
+                  onClick={() => {
+                    setMoreOpen(false);
+                    onDelete(item);
+                  }}
+                  tabIndex={selectionMode ? -1 : 0}
+                >
+                  {t("tasks.actions.delete")}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </article>

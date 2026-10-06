@@ -379,7 +379,7 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
           <div className="inline-flex items-center rounded border border-surface-3 bg-surface-2">
             <button
               type="button"
-              className="px-2.5 py-1.5 text-text-secondary transition-colors hover:text-text-primary disabled:cursor-not-allowed disabled:text-text-tertiary"
+              className="inline-flex min-h-9 items-center justify-center px-2.5 py-1.5 text-text-secondary transition-colors hover:text-text-primary disabled:cursor-not-allowed disabled:text-text-tertiary max-sm:min-h-11 max-sm:min-w-11"
               onClick={() => onChange({ count: Math.max(1, form.count - 1) })}
               disabled={form.count <= 1}
               aria-label="-"
@@ -397,7 +397,7 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
             />
             <button
               type="button"
-              className="px-2.5 py-1.5 text-text-secondary transition-colors hover:text-text-primary disabled:cursor-not-allowed disabled:text-text-tertiary"
+              className="inline-flex min-h-9 items-center justify-center px-2.5 py-1.5 text-text-secondary transition-colors hover:text-text-primary disabled:cursor-not-allowed disabled:text-text-tertiary max-sm:min-h-11 max-sm:min-w-11"
               onClick={() => onChange({ count: Math.min(20, form.count + 1) })}
               disabled={form.count >= 20}
               aria-label="+"
@@ -424,7 +424,7 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
                 <button
                   key={group.ratio}
                   type="button"
-                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                  className={`min-h-9 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors max-sm:min-h-11 ${
                     active
                       ? "border-accent bg-accent/10 text-accent"
                       : "border-surface-3 bg-surface-1 text-text-secondary hover:bg-surface-2 hover:text-text-primary"
@@ -647,12 +647,15 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
         {error ? <Notice variant="error">{error}</Notice> : null}
 
         <button
-          className="inline-flex w-full items-center justify-center rounded bg-accent px-5 py-3 text-sm font-semibold text-surface-0 shadow-sm transition-colors hover:bg-accent-dim disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex w-full items-center justify-center rounded bg-accent px-5 py-3 text-sm font-semibold text-surface-0 shadow-sm transition-colors hover:bg-accent-dim disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-text-tertiary disabled:shadow-none"
           type="submit"
           disabled={!form.prompt.trim()}
         >
           {isEditMode ? t("generation.edit") : t("generation.generate")}
         </button>
+        {form.prompt.trim() ? null : (
+          <p className="mt-2 text-center text-xs text-text-tertiary">{t("generation.disabledHint")}</p>
+        )}
       </form>
     </section>
   );

@@ -118,6 +118,7 @@ export const resources = {
         advancedJsonParams: "Advanced JSON Params",
         generate: "Generate",
         edit: "Edit",
+        disabledHint: "Enter a prompt above to start generating.",
         inputImages: {
           title: "Input images (optional)",
           hint: "Add a reference image to edit it — keep the original scene and change only what you describe.",
@@ -141,10 +142,14 @@ export const resources = {
         prompt: "Vision Prompt",
         promptPlaceholder: "Describe this image in detail: what is shown, what it means, and any text present.",
         detail: "Vision detail",
-        detailHint: "Use high when fine details matter; auto is cheaper when the model can decide.",
+        detailHint: "Choose “High detail” when fine details matter; “Auto” lets the model decide and is usually cheaper.",
+        detailAuto: "Auto (model decides)",
+        detailHigh: "High detail",
+        detailLow: "Low detail",
         advancedJsonParams: "Advanced JSON Params",
         modelHint: "Current vision model: {{model}}. Change it in API Settings if your endpoint uses another vision model.",
         analyze: "Analyze",
+        disabledHint: "Add at least one image to start analyzing.",
         inputImages: {
           title: "Images to analyze",
           hint: "PNG, JPEG, and WebP are supported. Images stay in memory and are sent directly to your configured endpoint.",
@@ -306,6 +311,12 @@ export const resources = {
         close: "Close",
         alt: "Preview",
       },
+      canvas: {
+        empty: {
+          title: "The canvas is empty",
+          hint: "Generated images appear here in real time — preview, download, or reuse their params.",
+        },
+      },
       notice: {
       },
       errors: {
@@ -318,6 +329,11 @@ export const resources = {
         visionModelRequired: "Vision model is required.",
         promptRequired: "Prompt is required.",
         visionImageRequired: "At least one image is required for vision analysis.",
+        rateLimited: "Rate limited (429). Too many requests — wait a moment or reduce concurrency.",
+        unauthorized: "Authentication failed (401/403). Check that your API key is valid and has access to this model.",
+        notFound: "Not found (404). Check your Base URL and model name.",
+        serverError: "Server error (5xx). The upstream service is temporarily unavailable — try again later.",
+        network: "Network request failed. Check your network, Base URL, and CORS settings.",
 
         apiKeyRequiredToFetchModels: "API Key is required to fetch models.",
         apiBaseUrlRequiredToFetchModels: "API Base URL is required to fetch models.",
@@ -327,14 +343,16 @@ export const resources = {
       },
       batch: {
         title: "Batch Generation",
-        subtitle: "Drive a batch from a plain prompt list. One prompt per line. `#` lines and blank lines are skipped.",
+        subtitle: "Run a whole batch from one prompt list: shared params, retry failures, export a ZIP when done.",
         prompts: {
           title: "Prompt list",
           hint: "One prompt per line. Lines starting with `#` are treated as comments. Blank lines are skipped.",
           placeholder: "# Knight series\na heavily armored knight on a cliff at sunset\na young female mage casting a fire spell\n\n# Wizard series\nan old wizard with a crystal staff in a library",
           importButton: "Import .txt / .md / .csv",
           clearButton: "Clear",
-          parsedSummary: "{{count}} prompt(s) parsed · {{comments}} comment line(s), {{empty}} blank line(s) skipped.",
+          parsedCount: "{{count}} prompt(s) parsed",
+          parsedComments: "{{comments}} comment line(s) skipped",
+          parsedEmpty: "{{empty}} blank line(s) skipped",
           importFailed: "Failed to import: {{reason}}",
         },
         inputImages: {
@@ -355,7 +373,9 @@ export const resources = {
         startEdit: "Start batch edit",
         progress: {
           title: "Current batch",
-          summary: "{{done}}/{{total}} done · {{running}} running · {{error}} failed",
+          donePart: "{{done}}/{{total}} done",
+          runningPart: "{{running}} running",
+          errorPart: "{{error}} failed",
           tasksHint: "Detailed task cards are shown in the Tasks panel below.",
         },
         actions: {
@@ -493,6 +513,7 @@ export const resources = {
         advancedJsonParams: "高级 JSON 参数",
         generate: "开始生成",
         edit: "开始编辑",
+        disabledHint: "输入提示词后即可开始生成。",
         inputImages: {
           title: "输入图片（可选）",
           hint: "添加参考图即可编辑——保留原图场景，只修改你描述的部分。",
@@ -516,10 +537,14 @@ export const resources = {
         prompt: "识图提示词",
         promptPlaceholder: "请用中文详细描述这张图片的内容：画面中有什么、表达了什么意思、关键信息是什么。",
         detail: "识图细节级别",
-        detailHint: "需要细节时建议 high；auto 会让模型自己判断，通常更省。",
+        detailHint: "需要细节时建议选「高细节」；「自动」会让模型自己判断，通常更省。",
+        detailAuto: "自动（模型判断）",
+        detailHigh: "高细节",
+        detailLow: "低细节",
         advancedJsonParams: "高级 JSON 参数",
         modelHint: "当前识图模型：{{model}}。如果你的端点使用其他视觉模型，请在 API 设置里修改。",
         analyze: "开始识图",
+        disabledHint: "添加至少一张图片后即可开始识图。",
         inputImages: {
           title: "待识别图片",
           hint: "支持 PNG、JPEG、WebP。图片只保存在内存中，并直接发送到你配置的端点。",
@@ -677,6 +702,12 @@ export const resources = {
         close: "关闭",
         alt: "预览",
       },
+      canvas: {
+        empty: {
+          title: "画布还是空的",
+          hint: "生成的图片会实时出现在这里，可预览、下载或复用参数。",
+        },
+      },
       notice: {
       },
       errors: {
@@ -688,6 +719,11 @@ export const resources = {
         visionModelRequired: "请填写识图模型。",
         promptRequired: "请填写提示词。",
         visionImageRequired: "请至少上传一张用于识图的图片。",
+        rateLimited: "请求过于频繁（429）。已触发限流，请稍后再试或降低并发数量。",
+        unauthorized: "认证失败（401/403）。请检查 API Key 是否有效、是否有该模型的访问权限。",
+        notFound: "接口不存在（404）。请检查 Base URL 与模型名称是否正确。",
+        serverError: "服务端错误（5xx）。上游服务暂时不可用，请稍后重试。",
+        network: "网络请求失败。请检查网络、Base URL 与 CORS 设置。",
 
         apiKeyRequiredToFetchModels: "获取模型前请先填写 API Key。",
         apiBaseUrlRequiredToFetchModels: "获取模型前请先填写 API Base URL。",
@@ -697,14 +733,16 @@ export const resources = {
       },
       batch: {
         title: "批量生图",
-        subtitle: "用一份纯文本 prompt 列表驱动批量任务。一行一条，# 开头视为注释、空行跳过。",
+        subtitle: "一份 prompt 列表跑出整批任务：参数共享、失败可重跑、完成后可打包下载。",
         prompts: {
           title: "Prompt 列表",
           hint: "一行一条 prompt。# 开头的行视为注释。空行会被跳过。",
           placeholder: "# 战士系列\na heavily armored knight on a cliff at sunset\na young female mage casting a fire spell\n\n# 法师系列\nan old wizard with a crystal staff in a library",
           importButton: "导入 .txt / .md / .csv",
           clearButton: "清空",
-          parsedSummary: "已解析 {{count}} 条 prompt · 跳过 {{comments}} 行注释、{{empty}} 行空行。",
+          parsedCount: "已解析 {{count}} 条 prompt",
+          parsedComments: "跳过 {{comments}} 行注释",
+          parsedEmpty: "跳过 {{empty}} 行空行",
           importFailed: "导入失败：{{reason}}",
         },
         inputImages: {
@@ -724,7 +762,9 @@ export const resources = {
         startEdit: "开始批量图生图",
         progress: {
           title: "当前批次",
-          summary: "{{done}}/{{total}} 完成 · {{running}} 运行中 · {{error}} 失败",
+          donePart: "{{done}}/{{total}} 完成",
+          runningPart: "{{running}} 运行中",
+          errorPart: "{{error}} 失败",
           tasksHint: "详细任务卡片请到下方任务面板查看。",
         },
         actions: {

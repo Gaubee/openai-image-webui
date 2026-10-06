@@ -92,3 +92,35 @@ body, .text-body {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/*
+ * Intent: dark scrollbars + mobile input polish (2026-10-06 R10)
+ * The app is a forced-dark theme; native light scrollbars broke the frame
+ * (R9 critic P2). Textareas drop their resize handle on touch layouts.
+ */
+* {
+  scrollbar-color: var(--color-surface-4) transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-4);
+  border: 3px solid transparent;
+  border-radius: 8px;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-surface-3);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+@media (max-width: 640px) {
+  textarea {
+    resize: none;
+  }
+}

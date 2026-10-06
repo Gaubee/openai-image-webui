@@ -55,7 +55,7 @@ export function ImageCacheSummary({ stats, onClear }: ImageCacheSummaryProps) {
         </div>
         <button
           type="button"
-          className="shrink-0 self-start rounded border border-surface-3 bg-surface-1 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary disabled:cursor-not-allowed disabled:text-text-tertiary disabled:opacity-50"
+          className="shrink-0 self-start rounded border border-error/30 bg-surface-1 px-3 py-1.5 text-xs font-medium text-error transition-colors hover:bg-error/10 disabled:cursor-not-allowed disabled:border-surface-3 disabled:bg-surface-1 disabled:text-text-tertiary disabled:opacity-50"
           disabled={stats.count <= 0}
           onClick={handleClear}
         >

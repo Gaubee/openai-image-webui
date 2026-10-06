@@ -167,17 +167,21 @@ export const BatchGenerationPanel = memo(function BatchGenerationPanel({
           </div>
           <p className="mt-1 text-xs text-text-secondary">{t("batch.prompts.hint")}</p>
           <textarea
-            className="mt-2 min-h-40 w-full resize-y rounded border border-surface-3 bg-surface-1 px-3 py-2.5 font-mono text-sm text-text-primary outline-none transition-colors placeholder:text-text-tertiary focus:border-accent focus:ring-2 focus:ring-accent/30"
+            className="mt-2 min-h-[300px] w-full resize-y rounded border border-surface-3 bg-surface-1 px-3 py-2.5 font-mono text-sm text-text-primary outline-none transition-colors placeholder:text-text-tertiary focus:border-accent focus:ring-2 focus:ring-accent/30"
             placeholder={t("batch.prompts.placeholder")}
             value={form.promptsText}
             onChange={(event) => onChange({ promptsText: event.target.value })}
           />
           <p className="mt-2 text-xs text-text-secondary">
-            {t("batch.prompts.parsedSummary", {
-              count: parsed.prompts.length,
-              comments: parsed.commentLines,
-              empty: parsed.emptyLines,
-            })}
+            {[
+              t("batch.prompts.parsedCount", { count: parsed.prompts.length }),
+              parsed.commentLines > 0
+                ? t("batch.prompts.parsedComments", { comments: parsed.commentLines })
+                : "",
+              parsed.emptyLines > 0 ? t("batch.prompts.parsedEmpty", { empty: parsed.emptyLines }) : "",
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
         </div>
 
@@ -197,11 +201,11 @@ export const BatchGenerationPanel = memo(function BatchGenerationPanel({
         />
 
         {/* Size + count + advanced */}
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3">
           <div className="block">
             <div className="mb-1.5 flex items-baseline justify-between gap-3">
-              <span className="text-sm font-medium text-text-primary">{t("batch.size")}</span>
-              <span className="text-xs tabular-nums text-text-tertiary">
+              <span className="whitespace-nowrap text-sm font-medium text-text-primary">{t("batch.size")}</span>
+              <span className="whitespace-nowrap text-xs tabular-nums text-text-tertiary">
                 {form.size.trim() || "1024x1024"} · {ratioLabel(form.size) || "1:1"}
               </span>
             </div>
@@ -212,7 +216,7 @@ export const BatchGenerationPanel = memo(function BatchGenerationPanel({
                   <button
                     key={group.ratio}
                     type="button"
-                    className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    className={`min-h-9 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors max-sm:min-h-11 ${
                       active
                         ? "border-accent bg-accent/10 text-accent"
                         : "border-surface-3 bg-surface-1 text-text-secondary hover:bg-surface-2 hover:text-text-primary"
@@ -243,7 +247,7 @@ export const BatchGenerationPanel = memo(function BatchGenerationPanel({
             <div className="inline-flex items-center rounded border border-surface-3 bg-surface-1">
               <button
                 type="button"
-                className="px-2.5 py-2 text-text-secondary transition-colors hover:text-text-primary disabled:cursor-not-allowed disabled:text-text-tertiary"
+                className="inline-flex min-h-9 items-center justify-center px-2.5 py-2 text-text-secondary transition-colors hover:text-text-primary disabled:cursor-not-allowed disabled:text-text-tertiary max-sm:min-h-11 max-sm:min-w-11"
                 onClick={() => onChange({ countPerPrompt: Math.max(1, form.countPerPrompt - 1) })}
                 disabled={form.countPerPrompt <= 1}
                 aria-label="-"
@@ -261,7 +265,7 @@ export const BatchGenerationPanel = memo(function BatchGenerationPanel({
               />
               <button
                 type="button"
-                className="px-2.5 py-2 text-text-secondary transition-colors hover:text-text-primary disabled:cursor-not-allowed disabled:text-text-tertiary"
+                className="inline-flex min-h-9 items-center justify-center px-2.5 py-2 text-text-secondary transition-colors hover:text-text-primary disabled:cursor-not-allowed disabled:text-text-tertiary max-sm:min-h-11 max-sm:min-w-11"
                 onClick={() => onChange({ countPerPrompt: Math.min(20, form.countPerPrompt + 1) })}
                 disabled={form.countPerPrompt >= 20}
                 aria-label="+"
@@ -285,8 +289,8 @@ export const BatchGenerationPanel = memo(function BatchGenerationPanel({
 
         {error ? <Notice variant="error">{error}</Notice> : null}
 
-        {/* Submit */}
-        <div className="rounded border border-surface-3 bg-surface-2 p-3">
+        {/* Submit — pinned to the rail bottom so the CTA is reachable without scrolling */}
+        <div className="sticky bottom-0 z-10 rounded border border-surface-3 bg-surface-2 p-3 shadow-soft">
           <p className="text-xs text-text-secondary">
             {t("batch.submitSummary", {
               prompts: parsed.prompts.length,
@@ -296,7 +300,7 @@ export const BatchGenerationPanel = memo(function BatchGenerationPanel({
           </p>
           <button
             type="submit"
-            className="mt-2 inline-flex w-full items-center justify-center rounded border border-accent bg-accent px-5 py-3 text-sm font-semibold text-surface-0 transition-colors hover:bg-accent-dim disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-text-tertiary"
+            className="mt-2 inline-flex w-full items-center justify-center rounded border border-accent bg-accent px-5 py-3 text-sm font-semibold text-surface-0 transition-colors hover:bg-accent-dim disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-text-tertiary"
             disabled={parsed.prompts.length === 0}
           >
             {isEditMode ? t("batch.startEdit") : t("batch.startGenerate")}
@@ -314,12 +318,13 @@ export const BatchGenerationPanel = memo(function BatchGenerationPanel({
             </span>
           </div>
           <p className="mt-1 text-xs text-text-secondary">
-            {t("batch.progress.summary", {
-              done: finishedCount,
-              total: progress.total,
-              running: progress.running,
-              error: progress.error,
-            })}
+            {[
+              t("batch.progress.donePart", { done: finishedCount, total: progress.total }),
+              progress.running > 0 ? t("batch.progress.runningPart", { running: progress.running }) : "",
+              progress.error > 0 ? t("batch.progress.errorPart", { error: progress.error }) : "",
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
           <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface-3">
             <div className="h-full bg-accent transition-all" style={{ width: `${percent}%` }} />

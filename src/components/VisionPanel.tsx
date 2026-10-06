@@ -76,10 +76,10 @@ export const VisionPanel = memo(function VisionPanel({ form, error, visionModel,
   }
 
   return (
-    <section className="p-1">
+    <section className="flex flex-1 flex-col p-1">
       <p className="mb-4 text-sm text-text-secondary">{t("vision.subtitle")}</p>
 
-      <form className="space-y-4" onSubmit={handleSubmit}>
+      <form className="flex flex-1 flex-col space-y-4" onSubmit={handleSubmit}>
         <ImageDropzone
           images={form.inputImages}
           onAdd={handleAddInputImages}
@@ -114,9 +114,9 @@ export const VisionPanel = memo(function VisionPanel({ form, error, visionModel,
             value={form.detail}
             onChange={(event) => onChange({ detail: event.target.value as VisionDetail })}
           >
-            <option value="auto">auto</option>
-            <option value="high">high</option>
-            <option value="low">low</option>
+            <option value="auto">{t("vision.detailAuto")}</option>
+            <option value="high">{t("vision.detailHigh")}</option>
+            <option value="low">{t("vision.detailLow")}</option>
           </select>
           <p className="mt-1 text-xs text-text-tertiary">{t("vision.detailHint")}</p>
         </label>
@@ -140,13 +140,18 @@ export const VisionPanel = memo(function VisionPanel({ form, error, visionModel,
 
         {error ? <Notice variant="error">{error}</Notice> : null}
 
-        <button
-          className="inline-flex w-full items-center justify-center rounded bg-accent px-5 py-3 text-sm font-semibold text-surface-0 shadow-sm transition-colors hover:bg-accent-dim disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-text-tertiary disabled:shadow-none"
-          type="submit"
-          disabled={form.inputImages.length === 0}
-        >
-          {t("vision.analyze")}
-        </button>
+        <div className="sticky bottom-0 z-10 mt-auto -mx-1 rounded border border-surface-3 bg-surface-1 p-3 shadow-soft">
+          <button
+            className="inline-flex w-full items-center justify-center rounded bg-accent px-5 py-3 text-sm font-semibold text-surface-0 shadow-sm transition-colors hover:bg-accent-dim disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-text-tertiary disabled:shadow-none"
+            type="submit"
+            disabled={form.inputImages.length === 0}
+          >
+            {t("vision.analyze")}
+          </button>
+          {form.inputImages.length > 0 ? null : (
+            <p className="mt-2 text-center text-xs text-text-tertiary">{t("vision.disabledHint")}</p>
+          )}
+        </div>
       </form>
     </section>
   );

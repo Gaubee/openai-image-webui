@@ -12,10 +12,12 @@ interface DrawerProps {
   open: boolean;
   onClose: () => void;
   title?: string;
+  /** "md" (default) suits forms; "lg" suits browsing surfaces like the library. */
+  size?: "md" | "lg";
   children: ReactNode;
 }
 
-export function Drawer({ open, onClose, title, children }: DrawerProps) {
+export function Drawer({ open, onClose, title, size = "md", children }: DrawerProps) {
   const { t } = useTranslation();
   useEffect(() => {
     if (!open) return;
@@ -50,7 +52,7 @@ export function Drawer({ open, onClose, title, children }: DrawerProps) {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="fixed right-0 top-0 z-50 h-full w-full max-w-md overflow-y-auto bg-surface-1 shadow-soft focus:outline-none"
+            className={`fixed right-0 top-0 z-50 h-full w-full overflow-y-auto bg-surface-1 shadow-soft focus:outline-none ${size === "lg" ? "max-w-xl" : "max-w-md"}`}
             tabIndex={-1}
           >
             {/* Header */}
@@ -69,7 +71,7 @@ export function Drawer({ open, onClose, title, children }: DrawerProps) {
             )}
 
             {/* Content */}
-            <div className="p-6">{children}</div>
+            <div className="flex min-h-full flex-col p-6">{children}</div>
           </motion.aside>
         </>
       )}

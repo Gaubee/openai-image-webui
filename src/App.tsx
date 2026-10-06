@@ -22,7 +22,7 @@ import { ResultGallery } from "./components/ResultGallery";
 import { useImageTasks } from "./hooks/useImageTasks";
 import { useSettings } from "./hooks/useSettings";
 import { useFormPersistence } from "./hooks/useFormPersistence";
-import { toFriendlyError } from "./lib/errors";
+import { isI18nErrorKey, toI18nError } from "./lib/errors";
 import { parseAdvancedJson } from "./lib/parseAdvancedJson";
 import { stripGeminiSizeArtifacts } from "./lib/imageSizing";
 import { DEFAULT_BATCH_FORM, DEFAULT_FORM, DEFAULT_VISION_FORM } from "./lib/storage";
@@ -116,6 +116,17 @@ function makeInputImageFile(file: File, width = 0, height = 0): InputImageFile {
 
 export default function App() {
   const { i18n, t } = useTranslation();
+  // Maps thrown errors to localized copy; i18n keys from toI18nError resolve here.
+  const showFriendlyError = useCallback(
+    (error: unknown) => {
+      const value = toI18nError(error, {
+        unknown: t("errors.unknown"),
+        requestFailed: t("errors.requestFailed"),
+      });
+      return isI18nErrorKey(value) ? t(value) : value;
+    },
+    [t],
+  );
   const { settings, setSettings, resetSettings } = useSettings();
   const [form, setForm] = useState<GenerateFormState>(DEFAULT_FORM);
   const [visionForm, setVisionForm] = useState<VisionFormState>(DEFAULT_VISION_FORM);
@@ -427,10 +438,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
 
     } catch (error) {
       setFormError(
-        toFriendlyError(error, {
-          unknown: t("errors.unknown"),
-          requestFailed: t("errors.requestFailed"),
-        }),
+        showFriendlyError(error),
       );
     }
   }, [addTasks, form, settings, t]);
@@ -458,10 +466,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
       setVisionForm((current) => ({ ...current, prompt: normalizedForm.prompt }));
     } catch (error) {
       setVisionError(
-        toFriendlyError(error, {
-          unknown: t("errors.unknown"),
-          requestFailed: t("errors.requestFailed"),
-        }),
+        showFriendlyError(error),
       );
     }
   }, [addVisionTask, settings, t, visionForm]);
@@ -496,10 +501,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
       setCurrentBatchId(batchId);
     } catch (error) {
       setBatchError(
-        toFriendlyError(error, {
-          unknown: t("errors.unknown"),
-          requestFailed: t("errors.requestFailed"),
-        }),
+        showFriendlyError(error),
       );
     }
   }, [addBatchTasks, batchForm, settings, t]);
@@ -518,10 +520,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
       setToast(t("batch.actions.exportDone", { exported: result.exported, missing: result.missing }));
     } catch (error) {
       setBatchError(
-        toFriendlyError(error, {
-          unknown: t("errors.unknown"),
-          requestFailed: t("errors.requestFailed"),
-        }),
+        showFriendlyError(error),
       );
     } finally {
       setIsExportingBatch(false);
@@ -554,9 +553,9 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
                 type="button"
                 onClick={() => setActiveMode(mode)}
                 aria-pressed={activeMode === mode}
-                className={`whitespace-nowrap rounded px-4 py-1.5 text-sm font-medium transition-colors ${
+                className={`min-h-9 whitespace-nowrap rounded px-4 py-1.5 text-sm font-medium transition-colors max-sm:min-h-11 ${
                   activeMode === mode
-                    ? "bg-accent text-surface-0"
+                    ? "bg-accent/10 text-accent ring-1 ring-accent/40 ring-inset"
                     : "text-text-secondary hover:text-text-primary"
                 }`}
               >
@@ -574,7 +573,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
                 key={key}
                 type="button"
                 onClick={() => setDrawerPanel(panel)}
-                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded px-2.5 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-1 hover:text-text-primary"
+                className="inline-flex min-h-9 items-center gap-1.5 whitespace-nowrap rounded px-2.5 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-1 hover:text-text-primary max-sm:min-h-11"
               >
                 <Icon className="h-4 w-4" />
                 {key === "library" ? t("library.title") : t(`workspace.modes.${key}`)}
@@ -583,55 +582,63 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
           </div>
         </nav>
 
-        {/* Main canvas */}
-        <main>
-          {activeMode === "generate" ? (
-            <div className="space-y-6">
-              <GenerationPanel
-                form={form}
-                error={formError}
-                model={settings.model}
-                onChange={updateForm}
-                onSubmit={handleGenerate}
-              />
-              <ResultGallery
-                id="result-gallery"
-                tasks={tasks}
-                onPreview={setPreviewUrl}
-                onRetry={retryTask}
-                onCancel={cancelTask}
-                onRemove={removeTask}
-                onClearTaskImage={clearTaskImage}
-                onReuseParams={handleReuseTask}
-              />
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <BatchGenerationPanel
-                form={batchForm}
-                error={batchError}
-                model={settings.model}
-                tasks={tasks}
-                currentBatchId={currentBatchId}
-                isExporting={isExportingBatch}
-                onChange={updateBatchForm}
-                onSubmit={handleBatchGenerate}
-                onRetryBatchErrors={handleRetryBatchErrors}
-                onExportBatch={handleExportBatchClick}
-              />
-              <ResultGallery
-                id="batch-results"
-                tasks={currentBatchId ? tasks.filter((task) => getTaskBatchId(task) === currentBatchId) : tasks}
-                onPreview={setPreviewUrl}
-                onRetry={retryTask}
-                onCancel={cancelTask}
-                onRemove={removeTask}
-                onClearTaskImage={clearTaskImage}
-                onReuseParams={handleReuseTask}
-              />
-            </div>
-          )}
-        </main>
+        {/* Main canvas: workbench grid — form left, results right (R6) */}
+        {(() => {
+          const visibleTasks =
+            activeMode === "batch" && currentBatchId
+              ? tasks.filter((task) => getTaskBatchId(task) === currentBatchId)
+              : tasks;
+          return (
+            <main className="grid items-start gap-6 xl:grid-cols-[minmax(340px,420px)_minmax(0,1fr)]">
+              {/* max-h reserves the ~150px header chrome so the rail (and its pinned CTA)
+      never extends past the viewport, even before the page is scrolled */}
+              <div className="space-y-6 xl:sticky xl:top-4 xl:max-h-[calc(100vh-9.5rem)] xl:overflow-y-auto">
+                {activeMode === "generate" ? (
+                  <GenerationPanel
+                    form={form}
+                    error={formError}
+                    model={settings.model}
+                    onChange={updateForm}
+                    onSubmit={handleGenerate}
+                  />
+                ) : (
+                  <BatchGenerationPanel
+                    form={batchForm}
+                    error={batchError}
+                    model={settings.model}
+                    tasks={tasks}
+                    currentBatchId={currentBatchId}
+                    isExporting={isExportingBatch}
+                    onChange={updateBatchForm}
+                    onSubmit={handleBatchGenerate}
+                    onRetryBatchErrors={handleRetryBatchErrors}
+                    onExportBatch={handleExportBatchClick}
+                  />
+                )}
+              </div>
+              <div className="min-w-0">
+                {visibleTasks.length === 0 ? (
+                  <div className="flex min-h-[45vh] flex-col items-center justify-center gap-3 rounded border border-dashed border-surface-3 bg-surface-1/40 px-6 text-center xl:min-h-[60vh]">
+                    <Images className="h-8 w-8 text-text-tertiary" aria-hidden />
+                    <p className="text-sm font-medium text-text-secondary">{t("canvas.empty.title")}</p>
+                    <p className="max-w-xs text-xs leading-5 text-text-tertiary">{t("canvas.empty.hint")}</p>
+                  </div>
+                ) : (
+                  <ResultGallery
+                    id={activeMode === "batch" ? "batch-results" : "result-gallery"}
+                    tasks={visibleTasks}
+                    onPreview={setPreviewUrl}
+                    onRetry={retryTask}
+                    onCancel={cancelTask}
+                    onRemove={removeTask}
+                    onClearTaskImage={clearTaskImage}
+                    onReuseParams={handleReuseTask}
+                  />
+                )}
+              </div>
+            </main>
+          );
+        })()}
 
         <Footer />
       </div>
@@ -649,6 +656,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
         open={drawerPanel === "library"}
         onClose={() => setDrawerPanel(null)}
         title={t("library.title")}
+        size="lg"
       >
         <ImageLibrary
           stats={cacheStats}
@@ -663,6 +671,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
         open={drawerPanel === "vision"}
         onClose={() => setDrawerPanel(null)}
         title={t("vision.title")}
+        size="lg"
       >
         <VisionPanel
           form={visionForm}
