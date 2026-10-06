@@ -38,7 +38,7 @@ export function ImageCacheSummary({ stats, onClear }: ImageCacheSummaryProps) {
 
   return (
     <div
-      className={`rounded border px-4 py-3 text-sm ${
+      className={`brushed rounded border px-4 py-3 text-sm ${
         stats.overWarning ? "border-accent/40 bg-accent/10 text-accent" : "border-surface-3 bg-surface-2 text-text-secondary"
       }`}
     >

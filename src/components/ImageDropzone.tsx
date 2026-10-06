@@ -94,10 +94,11 @@ export function ImageDropzone({
         {/* Contrast fix: neutral dashed tile, amber reserved for hover only */}
         <button
           type="button"
-          className="flex h-20 w-20 items-center justify-center rounded border border-dashed border-surface-4 bg-surface-1 text-xs font-medium text-text-secondary transition-colors hover:border-accent hover:text-accent"
+          className="flex h-24 w-full flex-col items-center justify-center gap-1 rounded border border-dashed border-surface-4 bg-surface-1 text-xs font-medium text-text-secondary transition-colors hover:border-accent hover:text-accent"
           onClick={() => fileInputRef.current?.click()}
         >
-          + {addButtonLabel}
+          <span aria-hidden className="text-lg leading-none">+</span>
+          {addButtonLabel}
         </button>
         <input
           ref={fileInputRef}

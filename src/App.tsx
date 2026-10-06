@@ -606,7 +606,7 @@ const handleReuseParams = useCallback((payload: ReuseParamsPayload) => {
                 : tasks;
             if (visibleTasks.length === 0) {
               return (
-                <div className="flex min-h-[45vh] flex-1 flex-col items-center justify-center gap-3 rounded border border-dashed border-surface-3 bg-surface-1/40 px-6 text-center">
+                <div className="brushed flex min-h-[45vh] flex-1 flex-col items-center justify-center gap-3 rounded border border-dashed border-surface-3 bg-surface-1/40 px-6 text-center">
                   <Images className="h-8 w-8 text-text-tertiary" aria-hidden />
                   <p className="text-sm font-medium text-text-secondary">{t("canvas.empty.title")}</p>
                   <p className="max-w-xs text-xs leading-5 text-text-tertiary">{t("canvas.empty.hint")}</p>

@@ -33,7 +33,7 @@ export function Header({
   const statusText = isConnected ? t("header.status.connected") : t("header.status.notConnected");
 
   return (
-    <header className="flex h-12 shrink-0 items-center gap-1 border-b border-surface-2 px-3">
+    <header className="brushed flex h-12 shrink-0 items-center gap-1 border-b border-surface-2 px-3">
       {/* text-sm! out-ranks the unlayered h1 display rule in index.css */}
       <h1 className="mr-2 whitespace-nowrap text-sm! font-semibold text-text-primary" title={t("header.subtitle")}>
         {t("header.title")}

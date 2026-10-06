@@ -129,7 +129,7 @@ export const BatchGenerationPanel = memo(function BatchGenerationPanel({
     form.inputImages.length > 1 && !!model && !supportsMultiImage;
 
   return (
-    <section className="rounded border border-surface-3 bg-surface-1 p-5">
+    <section className="brushed rounded border border-surface-3 bg-surface-1 p-5">
       <div className="mb-5">
         <h2 className="text-lg font-semibold text-text-primary">{t("batch.title")}</h2>
         <p className="mt-1 text-sm text-text-secondary">{t("batch.subtitle")}</p>

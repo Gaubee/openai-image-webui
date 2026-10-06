@@ -76,7 +76,7 @@ export const VisionPanel = memo(function VisionPanel({ form, error, visionModel,
   }
 
   return (
-    <section className="flex flex-1 flex-col p-1">
+    <section className="brushed flex flex-1 flex-col rounded border border-surface-3 bg-surface-1 p-5">
       <p className="mb-4 text-sm text-text-secondary">{t("vision.subtitle")}</p>
 
       <form className="flex flex-1 flex-col space-y-4" onSubmit={handleSubmit}>

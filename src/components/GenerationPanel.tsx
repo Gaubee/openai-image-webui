@@ -299,7 +299,7 @@ export const GenerationPanel = memo(function GenerationPanel({ form, error, mode
     form.inputImages.length > 1 && !!model && !supportsMultiImage;
 
   return (
-    <section className="rounded border border-surface-3 bg-surface-1 p-4 shadow-soft">
+    <section className="brushed rounded border border-surface-3 bg-surface-1 p-4 shadow-soft">
       <form className="space-y-3.5" onSubmit={handleSubmit}>
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-text-secondary">

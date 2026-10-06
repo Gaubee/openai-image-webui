@@ -52,7 +52,7 @@ export function Drawer({ open, onClose, title, size = "md", children }: DrawerPr
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className={`fixed right-0 top-0 z-50 h-full w-full overflow-y-auto bg-surface-1 shadow-soft focus:outline-none ${size === "lg" ? "max-w-xl" : "max-w-md"}`}
+            className={`brushed fixed right-0 top-0 z-50 h-full w-full overflow-y-auto bg-surface-1 shadow-soft focus:outline-none ${size === "lg" ? "max-w-xl" : "max-w-md"}`}
             tabIndex={-1}
           >
             {/* Header */}

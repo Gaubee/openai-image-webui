@@ -628,7 +628,7 @@ export const ImageLibrary = memo(function ImageLibrary({ stats, onPreview, onDel
   }
 
   return (
-    <section className="rounded border border-surface-3 bg-surface-1 p-5">
+    <section className="brushed rounded border border-surface-3 bg-surface-1 p-5">
       <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div className="min-w-0 flex-1">
           <p className="text-sm text-text-secondary">{t("library.subtitle")}</p>

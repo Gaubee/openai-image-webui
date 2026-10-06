@@ -141,7 +141,7 @@ export function TaskLightbox({ task, onClose, onRetry, onCancel, onRemove, onCle
         onClick={onClose}
         aria-label={t("preview.closePreview")}
       />
-      <div className="relative flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded border border-surface-3 bg-surface-1 shadow-2xl md:flex-row">
+      <div className="brushed relative flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded border border-surface-3 bg-surface-1 shadow-2xl md:flex-row">
         {/* Stage: image / vision output / failure state */}
         <div className="flex min-h-40 flex-1 items-center justify-center overflow-hidden bg-surface-0 p-3 md:p-4">
           {isVisionTask ? (
