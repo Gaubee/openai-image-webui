@@ -33,7 +33,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   apiKey: "",
   baseUrl: "",
   model: import.meta.env.VITE_DEFAULT_MODEL || "gpt-image-1",
-  visionModel: import.meta.env.VITE_DEFAULT_VISION_MODEL || "gpt-4.1-mini",
+  visionModel: import.meta.env.VITE_DEFAULT_VISION_MODEL || "gpt-6-luna",
   responseFormat: "url",
   concurrency: 3,
 };
