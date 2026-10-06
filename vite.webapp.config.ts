@@ -1,4 +1,3 @@
-import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
@@ -9,8 +8,6 @@ import react from "@vitejs/plugin-react";
  * server/port. No publicDir: the upstream PWA service worker must not cache
  * the webapp.
  */
-const repoRoot = fileURLToPath(new URL("..", import.meta.url));
-
 export default defineConfig({
   root: "webapp",
   base: "/",
@@ -25,6 +22,7 @@ export default defineConfig({
     strictPort: false,
     // Deps are pre-bundled into the repo-root node_modules — /@fs references
     // there must stay servable even though the vite root is webapp/.
-    fs: { allow: [repoRoot] },
+    // ".." is relative to the vite root (webapp/) and resolves to the repo root.
+    fs: { allow: [".."] },
   },
 });
